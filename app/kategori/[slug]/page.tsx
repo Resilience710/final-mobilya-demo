@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import CategoryClientPage from './CategoryClientPage';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { Product, Category } from '@/lib/types';
+import { Product, Category, Campaign } from '@/lib/types';
+import { applyCampaignToProducts, pickActiveCampaign } from '@/lib/campaigns';
 
 interface Props {
   params: { slug: string };
@@ -38,5 +39,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     .eq('category_id', cat.id)
     .eq('is_active', true);
 
-  return <CategoryClientPage category={cat as Category} products={(products as Product[]) || []} />;
+  const { data: campaignRows } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('is_active', true);
+
+  const activeCampaign = pickActiveCampaign((campaignRows as Campaign[]) ?? []);
+  const resolvedProducts = applyCampaignToProducts((products as Product[]) || [], activeCampaign);
+
+  return <CategoryClientPage category={cat as Category} products={resolvedProducts} />;
 }

@@ -10,6 +10,7 @@ import { useCart } from '@/lib/cart-context';
 import { formatPrice } from '@/lib/data';
 import AnimatedSection from '@/components/ui/AnimatedSection';
 import { useLang } from '@/lib/i18n';
+import { resolveProductPricing } from '@/lib/campaigns';
 
 const KARGO_LIMIT = 5000;
 const KARGO_UCRET = 499;
@@ -160,7 +161,9 @@ export default function SepetPage() {
                             </button>
                           </div>
                           <p className="font-semibold text-charcoal">
-                            {formatPrice((item.product.discount_price ?? item.product.base_price) * item.quantity)}
+                            {formatPrice(
+                              (resolveProductPricing(item.product, item.product.active_campaign).finalPrice + (item.variant?.price_modifier ?? 0)) * item.quantity
+                            )}
                           </p>
                         </div>
                       </div>

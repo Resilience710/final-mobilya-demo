@@ -4,10 +4,11 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Heart, Truck, Shield, RotateCcw, Minus, Plus, ChevronRight, Star } from 'lucide-react';
+import { ShoppingBag, Heart, Truck, Shield, RotateCcw, Minus, Plus, ChevronRight } from 'lucide-react';
 import { Product, ProductVariant } from '@/lib/types';
 import { useCart } from '@/lib/cart-context';
 import ProductCard from '@/components/product/ProductCard';
+import { resolveProductPricing } from '@/lib/campaigns';
 
 interface Props {
   product: Product;
@@ -26,10 +27,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
 
-  const hasDiscount = product.discount_price !== null && product.discount_price < product.base_price;
-  const baseDisplayPrice = hasDiscount ? product.discount_price! : product.base_price;
+  const pricing = resolveProductPricing(product, product.active_campaign);
   const variantModifier = selectedVariant?.price_modifier || 0;
-  const totalPrice = baseDisplayPrice + variantModifier;
+  const totalPrice = pricing.finalPrice + variantModifier;
 
   const images = product.images?.length > 0
     ? product.images
@@ -84,9 +84,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   />
                 </motion.div>
               </AnimatePresence>
-              {hasDiscount && (
+              {pricing.discountPercent > 0 && (
                 <span className="absolute top-4 left-4 px-3 py-1.5 bg-red-500 text-white text-sm font-medium rounded-xl">
-                  %{Math.round(((product.base_price - product.discount_price!) / product.base_price) * 100)} İndirim
+                  %{pricing.discountPercent} İndirim
                 </span>
               )}
             </div>
@@ -114,14 +114,33 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               {product.category?.name}
             </p>
             <h1 className="font-serif text-3xl lg:text-4xl text-charcoal mb-4">{product.name}</h1>
+
+            {product.active_campaign ? (
+              <div className="mb-5 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-charcoal px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
+                  {product.active_campaign.badge_text || 'Kampanya'}
+                </span>
+                {product.active_campaign.end_date ? (
+                  <span className="rounded-full bg-gold/10 px-3 py-1 text-xs font-medium text-gold">
+                    {new Date(product.active_campaign.end_date).toLocaleDateString('tr-TR')} tarihine kadar
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
             
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-6">
               <span className="font-serif text-3xl text-charcoal">{formatPrice(totalPrice)}</span>
-              {hasDiscount && (
-                <span className="text-lg text-brown/40 line-through">{formatPrice(product.base_price + variantModifier)}</span>
+              {pricing.compareAtPrice && (
+                <span className="text-lg text-brown/40 line-through">{formatPrice(pricing.compareAtPrice + variantModifier)}</span>
               )}
             </div>
+
+            {product.active_campaign?.subtitle ? (
+              <div className="mb-6 rounded-2xl border border-gold/20 bg-gold/10 px-4 py-3 text-sm text-brown/80">
+                {product.active_campaign.subtitle}
+              </div>
+            ) : null}
 
             <p className="text-brown/70 leading-relaxed mb-8">{product.description}</p>
 

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, ProductVariant, CartItem } from '@/lib/types';
+import { resolveProductPricing } from '@/lib/campaigns';
 
 interface CartContextType {
   items: CartItem[];
@@ -20,7 +21,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const CART_KEY = 'final-mobilya-cart';
 
 function getItemPrice(item: CartItem): number {
-  const base = item.product.discount_price ?? item.product.base_price;
+  const base = resolveProductPricing(item.product, item.product.active_campaign).finalPrice;
   const modifier = item.variant?.price_modifier ?? 0;
   return base + modifier;
 }

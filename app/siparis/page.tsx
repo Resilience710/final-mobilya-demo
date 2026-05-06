@@ -9,6 +9,7 @@ import { MapPin, Phone, User, FileText, Loader2, CheckCircle, ShoppingBag, Arrow
 import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
 import { CheckoutFormData } from '@/lib/types';
+import { resolveProductPricing } from '@/lib/campaigns';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
@@ -265,7 +266,9 @@ export default function CheckoutPage() {
                       <p className="text-sm text-charcoal font-medium truncate">{item.product.name}</p>
                       {item.variant && <p className="text-xs text-brown/50">{item.variant.name}</p>}
                       <p className="text-sm text-gold font-medium mt-1">
-                        {formatPrice(((item.product.discount_price ?? item.product.base_price) + (item.variant?.price_modifier ?? 0)) * item.quantity)}
+                        {formatPrice(
+                          (resolveProductPricing(item.product, item.product.active_campaign).finalPrice + (item.variant?.price_modifier ?? 0)) * item.quantity
+                        )}
                       </p>
                     </div>
                   </div>

@@ -1,7 +1,8 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { Product } from '@/lib/types';
+import { Product, Campaign } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import ProductDetailClient from './ProductDetailClient';
+import { applyCampaignToProduct, applyCampaignToProducts, pickActiveCampaign } from '@/lib/campaigns';
 
 interface Props {
   params: { slug: string };
@@ -25,6 +26,12 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductDetailPage({ params }: Props) {
   const supabase = createServerSupabaseClient();
+  const { data: campaignRows } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('is_active', true);
+
+  const activeCampaign = pickActiveCampaign((campaignRows as Campaign[]) ?? []);
 
   const { data: product } = await supabase
     .from('products')
@@ -48,8 +55,8 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <ProductDetailClient
-      product={product as Product}
-      relatedProducts={(relatedProducts as Product[]) || []}
+      product={applyCampaignToProduct(product as Product, activeCampaign)}
+      relatedProducts={applyCampaignToProducts((relatedProducts as Product[]) || [], activeCampaign)}
     />
   );
 }

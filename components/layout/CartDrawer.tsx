@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
+import { resolveProductPricing } from '@/lib/campaigns';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
@@ -63,7 +64,7 @@ export default function CartDrawer() {
               ) : (
                 <div className="space-y-4">
                   {items.map((item, index) => {
-                    const basePrice = item.product.discount_price ?? item.product.base_price;
+                    const basePrice = resolveProductPricing(item.product, item.product.active_campaign).finalPrice;
                     const modifier = item.variant?.price_modifier ?? 0;
                     const unitPrice = basePrice + modifier;
 

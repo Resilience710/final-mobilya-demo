@@ -68,7 +68,7 @@ export default function Header() {
         </p>
       </div>
 
-      <header className={`sticky top-0 z-50 transition-all duration-500 ${scrolled ? 'bg-cream/96 backdrop-blur-md shadow-card' : 'bg-cream'}`}>
+      <header className="sticky top-0 z-50 border-b border-stone/35 bg-cream/98 shadow-card backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[68px]">
 
@@ -193,7 +193,7 @@ export default function Header() {
         </div>
 
         {/* Bottom hairline */}
-        <div className="h-px bg-stone/25" />
+      <div className="h-px bg-stone/30" />
       </header>
 
       {/* ── Mobile Drawer ── */}

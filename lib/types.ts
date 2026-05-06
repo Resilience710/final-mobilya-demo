@@ -4,6 +4,8 @@ export type UserRole = 'admin' | 'customer';
 
 export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
 export type PaymentStatus = 'awaiting' | 'pending' | 'paid' | 'failed' | 'refunded';
+export type CampaignScope = 'all' | 'featured' | 'category';
+export type CampaignTheme = 'sunset' | 'forest' | 'midnight';
 
 export interface Profile {
   id: string;
@@ -26,6 +28,25 @@ export interface Category {
   sort_order: number;
   product_count?: number;
   created_at: string;
+}
+
+export interface Campaign {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  badge_text: string | null;
+  cta_label: string | null;
+  cta_href: string | null;
+  theme: CampaignTheme;
+  discount_percentage: number | null;
+  scope: CampaignScope;
+  category_id: string | null;
+  is_active: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  updated_at?: string;
+  category?: Category | null;
 }
 
 export interface Product {
@@ -51,6 +72,7 @@ export interface Product {
   category?: Category;
   variants?: ProductVariant[];
   reviews?: Review[];
+  active_campaign?: Campaign | null;
 }
 
 export interface ProductVariant {

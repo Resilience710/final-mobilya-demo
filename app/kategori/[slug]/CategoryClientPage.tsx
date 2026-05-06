@@ -10,6 +10,7 @@ import ProductCard from '@/components/product/ProductCard';
 import AnimatedSection from '@/components/ui/AnimatedSection';
 import SectionLabel from '@/components/ui/SectionLabel';
 import { useLang } from '@/lib/i18n';
+import { resolveProductPricing } from '@/lib/campaigns';
 
 interface Props {
   category: Category;
@@ -34,12 +35,16 @@ export default function CategoryClientPage({ category, products }: Props) {
 
   const filtered = useMemo(() => {
     let result = [...products];
-    if (maxPrice < 50000) result = result.filter((p) => (p.discount_price ?? p.base_price) <= maxPrice);
+    if (maxPrice < 50000) result = result.filter((p) => resolveProductPricing(p, p.active_campaign).finalPrice <= maxPrice);
     if (selectedVariants.length) result = result.filter((p) => p.variants?.some((v) => selectedVariants.includes(v.name)));
 
     switch (sort) {
-      case 'price-asc': result.sort((a, b) => (a.discount_price ?? a.base_price) - (b.discount_price ?? b.base_price)); break;
-      case 'price-desc': result.sort((a, b) => (b.discount_price ?? b.base_price) - (a.discount_price ?? a.base_price)); break;
+      case 'price-asc':
+        result.sort((a, b) => resolveProductPricing(a, a.active_campaign).finalPrice - resolveProductPricing(b, b.active_campaign).finalPrice);
+        break;
+      case 'price-desc':
+        result.sort((a, b) => resolveProductPricing(b, b.active_campaign).finalPrice - resolveProductPricing(a, a.active_campaign).finalPrice);
+        break;
       case 'new': result = result.filter((p) => p.is_featured).concat(result.filter((p) => !p.is_featured)); break;
     }
     return result;
@@ -149,7 +154,7 @@ export default function CategoryClientPage({ category, products }: Props) {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
-              {filtered.map((product, i) => (
+              {filtered.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>

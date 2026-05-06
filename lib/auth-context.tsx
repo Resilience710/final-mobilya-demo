@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/lib/types';
-import type { User } from '@supabase/supabase-js';
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
@@ -22,14 +22,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
+
+    if (error) {
+      console.error('[auth] Failed to fetch profile:', error);
+      setProfile(null);
+      return;
+    }
+
     setProfile(data as Profile | null);
   };
 
@@ -40,31 +47,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        await fetchProfile(user.id);
-      }
-      setLoading(false);
-    };
+    let mounted = true;
 
-    getUser();
+    const bootstrapAuth = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
+        if (!mounted) return;
+
+        const nextUser = session?.user ?? null;
+        setUser(nextUser);
+
+        if (nextUser) {
+          await fetchProfile(nextUser.id);
         } else {
           setProfile(null);
         }
+      } catch (error) {
+        console.error('[auth] Failed to bootstrap session:', error);
+        if (!mounted) return;
+        setUser(null);
+        setProfile(null);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void bootstrapAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        const nextUser = session?.user ?? null;
+
+        setUser(nextUser);
         setLoading(false);
+
+        window.setTimeout(async () => {
+          if (!mounted) return;
+
+          if (nextUser) {
+            await fetchProfile(nextUser.id);
+          } else {
+            setProfile(null);
+          }
+        }, 0);
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
