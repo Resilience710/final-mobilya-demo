@@ -5,30 +5,34 @@ import { Instagram, Youtube, Facebook } from 'lucide-react';
 
 const footerLinks: Record<string, { label: string; href: string }[]> = {
   'Alışveriş': [
-    { label: 'Oturma Grubu', href: '/urunler?kategori=oturma-grubu' },
-    { label: 'Yatak Odası', href: '/urunler?kategori=yatak-odasi' },
-    { label: 'Yemek Odası', href: '/urunler?kategori=yemek-odasi' },
-    { label: 'Çalışma Odası', href: '/urunler?kategori=calisma-odasi' },
+    { label: 'Oturma Grubu', href: '/kategori/oturma-grubu' },
+    { label: 'Yatak Odası', href: '/kategori/yatak-odasi' },
+    { label: 'Yemek Odası', href: '/kategori/yemek-odasi' },
+    { label: 'Çalışma Odası', href: '/kategori/calisma-odasi' },
+    { label: 'Genç Odası', href: '/kategori/genc-odasi' },
+    { label: 'Aksesuar', href: '/kategori/aksesuar' },
     { label: 'Tüm Ürünler', href: '/urunler' },
   ],
   'Yardım': [
     { label: 'Hesabım', href: '/hesabim' },
     { label: 'Siparişlerim', href: '/hesabim/siparislerim' },
-    { label: 'Kargo & Teslimat', href: '#' },
-    { label: 'İade & Değişim', href: '#' },
-    { label: 'İletişim', href: '#' },
+    { label: 'Kargo & Teslimat', href: '/kargo-teslimat' },
+    { label: 'İade & Değişim', href: '/iade-degisim' },
+    { label: 'İletişim', href: '/iletisim' },
   ],
   'Final Mobilya': [
-    { label: 'Hakkımızda', href: '#' },
+    { label: 'Hakkımızda', href: '/hakkimizda' },
     { label: 'Şubelerimiz', href: '/subelerimiz' },
     { label: 'Bayilik', href: '/bayilik' },
-    { label: 'Gizlilik Politikası', href: '#' },
+    { label: 'Gizlilik Politikası', href: '/gizlilik-politikasi' },
   ],
 };
 
 const trustItems = ['🚚 Ücretsiz Kargo', '🛡️ 5 Yıl Garanti', '🌿 Doğal Malzeme', '🔒 Güvenli Ödeme'];
 
 export default function Footer() {
+  const year = new Date().getFullYear();
+
   return (
     <footer className="bg-charcoal text-stone">
       {/* Newsletter */}
@@ -110,7 +114,7 @@ export default function Footer() {
                 <span key={text} className="text-xs text-stone/50 font-medium">{text}</span>
               ))}
             </div>
-            <p className="text-xs text-stone/30">© 2024 Final Mobilya. Tüm hakları saklıdır.</p>
+            <p className="text-xs text-stone/30">© {year} Final Mobilya. Tüm hakları saklıdır.</p>
           </div>
         </div>
       </div>

@@ -33,6 +33,7 @@ export default function ProductCard({ product, viewMode = 'grid' }: Props) {
               alt={product.name}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-105"
+              sizes="(max-width: 768px) 100vw, 224px"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal/35 via-transparent to-transparent" />
           </Link>
@@ -72,10 +73,11 @@ export default function ProductCard({ product, viewMode = 'grid' }: Props) {
               </div>
 
               <div className="flex items-center gap-2">
-                <button className="rounded-full border border-stone/30 p-3 text-charcoal transition-colors hover:border-red-300 hover:text-red-500">
+                <button type="button" className="rounded-full border border-stone/30 p-3 text-charcoal transition-colors hover:border-red-300 hover:text-red-500">
                   <Heart className="h-4 w-4" />
                 </button>
                 <button
+                  type="button"
                   onClick={(event) => {
                     event.preventDefault();
                     addItem(product);
@@ -122,14 +124,15 @@ export default function ProductCard({ product, viewMode = 'grid' }: Props) {
               ) : null}
             </div>
 
-            <button className="rounded-full bg-white/85 p-2.5 text-charcoal backdrop-blur-sm transition-transform duration-300 hover:scale-105 hover:bg-white">
+            <button type="button" className="rounded-full bg-white/85 p-2.5 text-charcoal backdrop-blur-sm transition-transform duration-300 hover:scale-105 hover:bg-white">
               <Heart className="h-4 w-4" />
             </button>
           </div>
 
           <div className="absolute bottom-4 left-4 right-4">
-            <div className="translate-y-6 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="translate-y-0 opacity-100 transition-all duration-500 sm:translate-y-6 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100">
               <button
+                type="button"
                 onClick={(event) => {
                   event.preventDefault();
                   addItem(product);

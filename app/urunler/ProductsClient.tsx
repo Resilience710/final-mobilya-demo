@@ -43,6 +43,8 @@ export default function ProductsClient({ products, categories, activeCategory, a
     updateParams('arama', search);
   };
 
+  const activeCategoryName = categories.find((category) => category.slug === activeCategory)?.name;
+
   return (
     <div className="min-h-screen bg-cream pt-24 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -55,12 +57,12 @@ export default function ProductsClient({ products, categories, activeCategory, a
           <h1 className="font-serif text-display-sm text-charcoal mb-2">Ürünlerimiz</h1>
           <p className="text-brown/60 text-sm">
             {products.length} ürün bulundu
-            {activeCategory && ` — ${categories.find(c => c.slug === activeCategory)?.name}`}
+            {activeCategoryName && ` — ${activeCategoryName}`}
           </p>
         </motion.div>
 
         {/* Controls Bar */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+        <div className="mb-8 flex flex-col gap-3 lg:flex-row lg:items-center">
           {/* Search */}
           <form onSubmit={handleSearch} className="flex-1 relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brown/40" />
@@ -73,11 +75,11 @@ export default function ProductsClient({ products, categories, activeCategory, a
             />
           </form>
 
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
             {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm transition-all ${
+              className={`flex min-h-12 items-center justify-center gap-2 px-4 py-3 rounded-xl border text-sm transition-all ${
                 showFilters ? 'bg-charcoal text-white border-charcoal' : 'bg-white border-stone/40 text-charcoal hover:border-gold/60'
               }`}
             >
@@ -89,7 +91,8 @@ export default function ProductsClient({ products, categories, activeCategory, a
             <select
               value={activeSort || ''}
               onChange={(e) => updateParams('siralama', e.target.value)}
-              className="px-4 py-3 bg-white border border-stone/40 rounded-xl text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold transition-all"
+              className="min-h-12 px-4 py-3 bg-white border border-stone/40 rounded-xl text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold transition-all"
+              aria-label="Ürün sıralaması"
             >
               {sortOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -97,7 +100,23 @@ export default function ProductsClient({ products, categories, activeCategory, a
             </select>
 
             {/* View Mode */}
-            <div className="hidden sm:flex bg-white border border-stone/40 rounded-xl overflow-hidden">
+            <div className="col-span-2 flex bg-white border border-stone/40 rounded-xl overflow-hidden sm:col-span-1 md:hidden">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`flex-1 px-3 py-3 transition-colors ${viewMode === 'grid' ? 'bg-charcoal text-white' : 'text-brown/50 hover:text-charcoal'}`}
+                aria-label="Izgara görünümü"
+              >
+                <Grid3X3 className="mx-auto w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex-1 px-3 py-3 transition-colors ${viewMode === 'list' ? 'bg-charcoal text-white' : 'text-brown/50 hover:text-charcoal'}`}
+                aria-label="Liste görünümü"
+              >
+                <LayoutList className="mx-auto w-4 h-4" />
+              </button>
+            </div>
+            <div className="hidden md:flex bg-white border border-stone/40 rounded-xl overflow-hidden">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`px-3 py-3 transition-colors ${viewMode === 'grid' ? 'bg-charcoal text-white' : 'text-brown/50 hover:text-charcoal'}`}
@@ -128,7 +147,7 @@ export default function ProductsClient({ products, categories, activeCategory, a
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => updateParams('kategori', '')}
-                    className={`px-4 py-2 rounded-full text-sm transition-all ${
+                    className={`min-h-11 px-4 py-2 rounded-full text-sm transition-all ${
                       !activeCategory ? 'bg-charcoal text-white' : 'bg-cream border border-stone/40 text-brown hover:border-gold/60'
                     }`}
                   >
@@ -138,7 +157,7 @@ export default function ProductsClient({ products, categories, activeCategory, a
                     <button
                       key={cat.id}
                       onClick={() => updateParams('kategori', cat.slug)}
-                      className={`px-4 py-2 rounded-full text-sm transition-all ${
+                      className={`min-h-11 px-4 py-2 rounded-full text-sm transition-all ${
                         activeCategory === cat.slug ? 'bg-charcoal text-white' : 'bg-cream border border-stone/40 text-brown hover:border-gold/60'
                       }`}
                     >

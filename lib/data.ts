@@ -64,19 +64,19 @@ export const categories: Category[] = [
   },
   {
     id: '5',
-    name: 'Bahçe & Balkon',
-    slug: 'bahce-balkon',
+    name: 'Genç Odası',
+    slug: 'genc-odasi',
     image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
     count: 18,
-    description: 'Açık alan yaşamı için dayanıklı ve şık mobilyalar',
+    description: 'Genç odaları için modern ve fonksiyonel mobilyalar',
   },
   {
     id: '6',
-    name: 'Dekorasyon',
-    slug: 'dekorasyon',
+    name: 'Aksesuar',
+    slug: 'aksesuar',
     image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&q=80',
     count: 64,
-    description: 'Mekanınıza karakter katan aksesuar ve dekorasyon',
+    description: 'Mekanınıza karakter katan aksesuar ve tamamlayıcı ürünler',
   },
 ];
 

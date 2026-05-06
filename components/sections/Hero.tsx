@@ -21,7 +21,7 @@ const slides = [
   {
     id: 2,
     image: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=1800&q=85',
-    href: '/urunler?kategori=yatak-odasi',
+    href: '/kategori/yatak-odasi',
     label: 'YATAK ODASI',
     headline: 'Dinlenen Göz İçin\nDaha Yumuşak Bir Sahne',
     sub: 'Daha sakin renk geçişleri, daha tok malzemeler ve gündelik kullanımda rahatlık sunan dengeli bir kurgu.',
@@ -32,7 +32,7 @@ const slides = [
   {
     id: 3,
     image: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=1800&q=85',
-    href: '/urunler?kategori=yemek-odasi',
+    href: '/kategori/yemek-odasi',
     label: 'YEMEK ODASI',
     headline: 'Sofrada Kalan\nİlk İzlenim',
     sub: 'Davet hissini büyüten tablalar, güçlü siluetler ve gündelik kullanıma uygun zarif bitişler.',
@@ -62,7 +62,7 @@ export default function Hero() {
   const slide = slides[current];
 
   return (
-    <section className="relative min-h-[760px] overflow-hidden bg-charcoal">
+    <section className="relative min-h-[680px] overflow-hidden bg-charcoal sm:min-h-[760px]">
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
@@ -79,9 +79,9 @@ export default function Hero() {
         </motion.div>
       </AnimatePresence>
 
-      <div className="relative z-10 mx-auto flex min-h-[760px] max-w-7xl flex-col justify-end px-4 pb-12 pt-32 sm:px-6 lg:px-8 lg:pb-16">
-        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
-          <div className="max-w-2xl rounded-[34px] border border-white/12 bg-charcoal/46 p-6 shadow-2xl shadow-black/20 backdrop-blur-md md:p-8">
+      <div className="relative z-10 mx-auto flex min-h-[680px] max-w-7xl flex-col justify-end px-4 pb-10 pt-28 sm:min-h-[760px] sm:px-6 sm:pb-12 sm:pt-32 lg:px-8 lg:pb-16">
+        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end lg:gap-10">
+          <div className="max-w-2xl rounded-[30px] border border-white/12 bg-charcoal/58 p-5 shadow-2xl shadow-black/20 backdrop-blur-md sm:p-6 md:rounded-[34px] md:p-8">
             <motion.div
               key={`label-${slide.id}`}
               initial={{ opacity: 0, y: 14 }}
@@ -98,7 +98,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="font-serif text-[clamp(3rem,6vw,6rem)] leading-[0.95] tracking-[-0.04em] text-white whitespace-pre-line [text-shadow:0_6px_26px_rgba(0,0,0,0.72)]"
+              className="font-serif text-[clamp(2.85rem,8vw,6rem)] leading-[0.95] tracking-[-0.04em] text-white whitespace-pre-line [text-shadow:0_6px_26px_rgba(0,0,0,0.72)]"
             >
               {slide.headline}
             </motion.h1>
@@ -108,7 +108,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.18 }}
-              className="mt-6 max-w-xl text-base leading-relaxed text-white/90 md:text-lg [text-shadow:0_4px_18px_rgba(0,0,0,0.72)]"
+              className="mt-5 max-w-xl text-[15px] leading-relaxed text-white/90 sm:text-base md:mt-6 md:text-lg [text-shadow:0_4px_18px_rgba(0,0,0,0.72)]"
             >
               {slide.sub}
             </motion.p>
@@ -118,18 +118,18 @@ export default function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.26 }}
-              className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center"
+              className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center sm:gap-4"
             >
               <Link
                 href={slide.href}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-charcoal shadow-lg shadow-black/25 transition-colors hover:bg-[#d8b979]"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-charcoal shadow-lg shadow-black/25 transition-colors hover:bg-[#d8b979]"
               >
                 {slide.cta}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/urunler"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-gold/60 bg-charcoal px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-black/20 transition-colors hover:bg-[#2b2b27]"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-gold/60 bg-charcoal px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-black/20 transition-colors hover:bg-[#2b2b27]"
               >
                 Tüm Ürünler
               </Link>
@@ -139,7 +139,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.34 }}
-              className="mt-10 flex flex-wrap gap-3"
+              className="mt-8 flex flex-wrap gap-3 sm:mt-10"
             >
               {highlightChips.map((chip) => (
                 <div key={chip.label} className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/95 px-4 py-2 text-sm font-medium text-charcoal shadow-lg shadow-black/10">
@@ -154,7 +154,7 @@ export default function Hero() {
             initial={{ opacity: 0, x: 26 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.22 }}
-            className="grid gap-4 sm:grid-cols-2 lg:justify-self-end"
+            className="hidden gap-4 sm:grid sm:grid-cols-2 lg:justify-self-end"
           >
             <div className="rounded-[30px] border border-stone/70 bg-[#f8f3ea] p-5 text-charcoal shadow-xl shadow-black/15 sm:col-span-2">
               <div className="flex items-start justify-between gap-4">
@@ -182,13 +182,13 @@ export default function Hero() {
           </motion.div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-5 border-t border-white/10 pt-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-5 sm:mt-12 sm:gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-2">
             {slides.map((item, index) => (
               <button
                 key={item.id}
                 onClick={() => setCurrent(index)}
-                className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-all ${
+                className={`min-h-11 rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition-all sm:text-xs ${
                   index === current
                     ? 'bg-charcoal text-white shadow-lg shadow-black/20'
                     : 'border border-charcoal/25 bg-white text-charcoal shadow-md shadow-black/5 hover:bg-[#f8f3ea]'

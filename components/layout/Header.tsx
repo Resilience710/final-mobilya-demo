@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,12 +12,12 @@ import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
 
 const categories = [
-  { label: 'Oturma Grubu',  href: '/urunler?kategori=oturma-grubu',  desc: 'Koltuk, kanepe & köşe takımı' },
-  { label: 'Yatak Odası',   href: '/urunler?kategori=yatak-odasi',   desc: 'Yatak, gardırop & komodin' },
-  { label: 'Yemek Odası',   href: '/urunler?kategori=yemek-odasi',   desc: 'Masa & sandalye takımları' },
-  { label: 'Çalışma Odası', href: '/urunler?kategori=calisma-odasi', desc: 'Masa, sandalye & kitaplık' },
-  { label: 'Bahçe & Balkon',href: '/urunler?kategori=bahce-balkon',  desc: 'Dış mekan mobilyaları' },
-  { label: 'Dekorasyon',    href: '/urunler?kategori=dekorasyon',    desc: 'Aksesuar & tamamlayıcılar' },
+  { label: 'Oturma Grubu', href: '/kategori/oturma-grubu', desc: 'Koltuk, kanepe & köşe takımı' },
+  { label: 'Yatak Odası', href: '/kategori/yatak-odasi', desc: 'Yatak, gardırop & komodin' },
+  { label: 'Yemek Odası', href: '/kategori/yemek-odasi', desc: 'Masa & sandalye takımları' },
+  { label: 'Çalışma Odası', href: '/kategori/calisma-odasi', desc: 'Masa, sandalye & kitaplık' },
+  { label: 'Genç Odası', href: '/kategori/genc-odasi', desc: 'Fonksiyonel genç yaşam alanları' },
+  { label: 'Aksesuar', href: '/kategori/aksesuar', desc: 'Ayna, sehpa & tamamlayıcılar' },
 ];
 
 const topLinks = [
@@ -27,11 +27,10 @@ const topLinks = [
 ];
 
 export default function Header() {
-  const [scrolled, setScrolled]               = useState(false);
-  const [menuOpen, setMenuOpen]               = useState(false);
-  const [searchOpen, setSearchOpen]           = useState(false);
-  const [searchQuery, setSearchQuery]         = useState('');
-  const [dropdownOpen, setDropdownOpen]       = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -39,12 +38,6 @@ export default function Header() {
   const { user, isAdmin, signOut } = useAuth();
   const router   = useRouter();
   const pathname = usePathname();
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   const openDropdown  = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setDropdownOpen(true); };
   const scheduleClose = () => { closeTimer.current = setTimeout(() => setDropdownOpen(false), 160); };
@@ -150,18 +143,18 @@ export default function Header() {
 
             {/* ── Right actions ── */}
             <div className="flex items-center gap-0.5">
-              <button onClick={() => setSearchOpen(true)} className="p-2.5 text-charcoal/70 hover:text-charcoal transition-colors rounded-lg" aria-label="Ara">
+              <button onClick={() => setSearchOpen(true)} className="p-3 text-charcoal/70 hover:text-charcoal transition-colors rounded-lg" aria-label="Ara">
                 <Search className="w-5 h-5" />
               </button>
 
               {user ? (
                 <div className="hidden sm:flex items-center gap-0.5">
                   {isAdmin && (
-                    <Link href="/admin" className="p-2.5 text-gold hover:text-gold-light transition-colors rounded-lg" title="Admin Panel">
+                    <Link href="/admin" className="p-3 text-gold hover:text-gold-light transition-colors rounded-lg" title="Admin Panel">
                       <ShieldCheck className="w-5 h-5" />
                     </Link>
                   )}
-                  <Link href="/hesabim" className="p-2.5 text-charcoal/70 hover:text-charcoal transition-colors rounded-lg" title="Hesabım">
+                  <Link href="/hesabim" className="p-3 text-charcoal/70 hover:text-charcoal transition-colors rounded-lg" title="Hesabım">
                     <User className="w-5 h-5" />
                   </Link>
                 </div>
@@ -172,7 +165,7 @@ export default function Header() {
                 </Link>
               )}
 
-              <button onClick={() => setIsOpen(true)} className="relative p-2.5 text-charcoal/70 hover:text-charcoal transition-colors rounded-lg" aria-label="Sepet">
+              <button onClick={() => setIsOpen(true)} className="relative p-3 text-charcoal/70 hover:text-charcoal transition-colors rounded-lg" aria-label="Sepet">
                 <ShoppingBag className="w-5 h-5" />
                 {itemCount > 0 && (
                   <motion.span
@@ -185,7 +178,7 @@ export default function Header() {
                 )}
               </button>
 
-              <button onClick={() => setMenuOpen(true)} className="lg:hidden p-2.5 text-charcoal/70 hover:text-charcoal transition-colors rounded-lg ml-1" aria-label="Menü">
+              <button onClick={() => setMenuOpen(true)} className="lg:hidden p-3 text-charcoal/70 hover:text-charcoal transition-colors rounded-lg ml-1" aria-label="Menü">
                 <Menu className="w-5 h-5" />
               </button>
             </div>
@@ -208,7 +201,7 @@ export default function Header() {
             <motion.div
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'tween', ease: [0.25, 0.1, 0.25, 1], duration: 0.32 }}
-              className="fixed right-0 top-0 bottom-0 w-[300px] bg-cream z-50 overflow-y-auto shadow-modal lg:hidden flex flex-col"
+              className="safe-bottom fixed right-0 top-0 bottom-0 w-[300px] max-w-[88vw] bg-cream z-50 overflow-y-auto shadow-modal lg:hidden flex flex-col"
             >
               {/* Drawer header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-stone/20">

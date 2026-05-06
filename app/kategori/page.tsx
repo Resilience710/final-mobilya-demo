@@ -2,10 +2,19 @@ import type { Metadata } from 'next';
 import KategoriContent from './KategoriContent';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { Category } from '@/lib/types';
+import { absoluteUrl, SITE_NAME } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Tüm Kategoriler',
   description: 'Oturma odası, yatak odası, yemek odası ve daha fazlası için premium mobilya koleksiyonları.',
+  alternates: {
+    canonical: '/kategori',
+  },
+  openGraph: {
+    title: `Tüm Kategoriler | ${SITE_NAME}`,
+    description: 'Oturma odası, yatak odası, yemek odası ve daha fazlası için premium mobilya koleksiyonları.',
+    url: absoluteUrl('/kategori'),
+  },
 };
 
 export default async function KategoriPage() {
@@ -34,5 +43,22 @@ export default async function KategoriPage() {
     product_count: counts.get(category.id) || 0,
   }));
 
-  return <KategoriContent categories={categoryList} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: 'Final Mobilya Kategorileri',
+            url: absoluteUrl('/kategori'),
+            numberOfItems: categoryList.length,
+          }),
+        }}
+      />
+      <KategoriContent categories={categoryList} />
+    </>
+  );
 }

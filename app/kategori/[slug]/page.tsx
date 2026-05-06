@@ -4,6 +4,7 @@ import CategoryClientPage from './CategoryClientPage';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { Product, Category, Campaign } from '@/lib/types';
 import { applyCampaignToProducts, pickActiveCampaign } from '@/lib/campaigns';
+import { absoluteUrl, cleanText, SITE_NAME } from '@/lib/site';
 
 interface Props {
   params: { slug: string };
@@ -19,7 +20,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .single();
 
   if (!cat) return {};
-  return { title: cat.name, description: cat.description };
+  const title = cat.name;
+  const description = cleanText(cat.description, `${cat.name} koleksiyonunu keşfedin.`);
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `/kategori/${cat.slug}`,
+    },
+    openGraph: {
+      title: `${title} | ${SITE_NAME}`,
+      description,
+      url: absoluteUrl(`/kategori/${cat.slug}`),
+      images: cat.image_url ? [{ url: cat.image_url, alt: cat.name }] : undefined,
+    },
+  };
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {
@@ -47,5 +63,23 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const activeCampaign = pickActiveCampaign((campaignRows as Campaign[]) ?? []);
   const resolvedProducts = applyCampaignToProducts((products as Product[]) || [], activeCampaign);
 
-  return <CategoryClientPage category={cat as Category} products={resolvedProducts} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: (cat as Category).name,
+            description: cleanText((cat as Category).description, ''),
+            url: absoluteUrl(`/kategori/${(cat as Category).slug}`),
+            numberOfItems: resolvedProducts.length,
+          }),
+        }}
+      />
+      <CategoryClientPage category={cat as Category} products={resolvedProducts} />
+    </>
+  );
 }

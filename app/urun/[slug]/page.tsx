@@ -3,6 +3,7 @@ import { Product, Campaign } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import ProductDetailClient from './ProductDetailClient';
 import { applyCampaignToProduct, applyCampaignToProducts, pickActiveCampaign } from '@/lib/campaigns';
+import { absoluteUrl, cleanText, SITE_NAME } from '@/lib/site';
 
 interface Props {
   params: { slug: string };
@@ -12,15 +13,29 @@ export async function generateMetadata({ params }: Props) {
   const supabase = createServerSupabaseClient();
   const { data: product } = await supabase
     .from('products')
-    .select('name, short_description')
+    .select('name, short_description, slug, images')
     .eq('slug', params.slug)
     .single();
 
   if (!product) return { title: 'Ürün Bulunamadı' };
 
+  const title = product.name;
+  const description = cleanText(product.short_description, `${product.name} ürün detayları ve fiyat bilgisi.`);
+
   return {
-    title: product.name,
-    description: product.short_description,
+    title,
+    description,
+    alternates: {
+      canonical: `/urun/${product.slug}`,
+    },
+    openGraph: {
+      title: `${title} | ${SITE_NAME}`,
+      description,
+      url: absoluteUrl(`/urun/${product.slug}`),
+      images: Array.isArray(product.images) && product.images[0]
+        ? [{ url: product.images[0], alt: product.name }]
+        : undefined,
+    },
   };
 }
 
@@ -53,10 +68,39 @@ export default async function ProductDetailPage({ params }: Props) {
     .eq('is_active', true)
     .limit(4);
 
+  const resolvedProduct = applyCampaignToProduct(product as Product, activeCampaign);
+
   return (
-    <ProductDetailClient
-      product={applyCampaignToProduct(product as Product, activeCampaign)}
-      relatedProducts={applyCampaignToProducts((relatedProducts as Product[]) || [], activeCampaign)}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: resolvedProduct.name,
+            description: cleanText(resolvedProduct.short_description || resolvedProduct.description, resolvedProduct.name),
+            image: resolvedProduct.images,
+            sku: resolvedProduct.sku || undefined,
+            brand: {
+              '@type': 'Brand',
+              name: SITE_NAME,
+            },
+            offers: {
+              '@type': 'Offer',
+              priceCurrency: resolvedProduct.currency || 'TRY',
+              price: resolvedProduct.discount_price ?? resolvedProduct.base_price,
+              availability: resolvedProduct.stock_quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+              url: absoluteUrl(`/urun/${resolvedProduct.slug}`),
+            },
+          }),
+        }}
+      />
+      <ProductDetailClient
+        product={resolvedProduct}
+        relatedProducts={applyCampaignToProducts((relatedProducts as Product[]) || [], activeCampaign)}
+      />
+    </>
   );
 }

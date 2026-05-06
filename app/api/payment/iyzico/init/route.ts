@@ -122,11 +122,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Sunucu konfigürasyon hatası.' }, { status: 500 });
     }
 
+    const buyerIp =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip')?.trim() ||
+      '';
+
+    const buyerIdentityNumber =
+      typeof user.user_metadata?.identity_number === 'string'
+        ? user.user_metadata.identity_number
+        : null;
+
     const result = await initCheckoutForm({
       orderId: order.id,
       totalPrice: Number(order.total_price),
       userId: user.id,
       userEmail: user.email || `user-${user.id}@example.com`,
+      buyerIdentityNumber,
+      buyerIp,
       shipping: {
         name:    order.shipping_name,
         address: order.shipping_address,

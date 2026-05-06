@@ -1,12 +1,55 @@
+import type { Metadata } from 'next';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { Product, Category, Campaign } from '@/lib/types';
 import ProductsClient from './ProductsClient';
 import { applyCampaignToProducts, pickActiveCampaign, resolveProductPricing } from '@/lib/campaigns';
+import { absoluteUrl, cleanText, SITE_NAME } from '@/lib/site';
 
-export const metadata = {
-  title: 'Ürünler',
-  description: 'Final Mobilya premium mobilya koleksiyonu. Oturma grubu, yatak odası, yemek odası ve daha fazlası.',
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: { kategori?: string; siralama?: string; arama?: string };
+}): Promise<Metadata> {
+  const supabase = createServerSupabaseClient();
+  let title = 'Ürünler';
+  let description = 'Final Mobilya ürünleri, koltuk takımları, yatak odası, yemek odası ve dekorasyon koleksiyonlarını keşfedin.';
+  let canonical = absoluteUrl('/urunler');
+  let openGraphTitle = `${title} | ${SITE_NAME}`;
+
+  if (searchParams.kategori) {
+    const { data: category } = await supabase
+      .from('categories')
+      .select('name, slug, description')
+      .eq('slug', searchParams.kategori)
+      .maybeSingle();
+
+    if (category) {
+      title = `${category.name} Koleksiyonu`;
+      description = cleanText(category.description, `${category.name} ürünleri ve kampanyaları.`);
+      canonical = absoluteUrl(`/kategori/${category.slug}`);
+      openGraphTitle = `${title} | ${SITE_NAME}`;
+    }
+  }
+
+  if (searchParams.arama) {
+    title = `"${searchParams.arama}" Arama Sonuçları`;
+    description = `${searchParams.arama} için ${SITE_NAME} ürün arama sonuçları.`;
+    openGraphTitle = `${title} | ${SITE_NAME}`;
+  }
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title: openGraphTitle,
+      description,
+      url: canonical,
+    },
+  };
+}
 
 export default async function ProductsPage({
   searchParams,
@@ -73,12 +116,27 @@ export default async function ProductsPage({
   }
 
   return (
-    <ProductsClient
-      products={resolvedProducts}
-      categories={(categories as Category[]) || []}
-      activeCategory={searchParams.kategori || null}
-      activeSort={searchParams.siralama || null}
-      searchQuery={searchParams.arama || null}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: 'Final Mobilya Ürünler',
+            url: absoluteUrl('/urunler'),
+            numberOfItems: resolvedProducts.length,
+          }),
+        }}
+      />
+      <ProductsClient
+        products={resolvedProducts}
+        categories={(categories as Category[]) || []}
+        activeCategory={searchParams.kategori || null}
+        activeSort={searchParams.siralama || null}
+        searchQuery={searchParams.arama || null}
+      />
+    </>
   );
 }

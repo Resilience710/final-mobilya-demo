@@ -26,6 +26,8 @@ export interface CheckoutInitParams {
   totalPrice: number;
   userId: string;
   userEmail: string;
+  buyerIdentityNumber?: string | null;
+  buyerIp: string;
   shipping: {
     name: string;
     address: string;
@@ -55,6 +57,30 @@ export function moneyStr(n: number): string {
   return (Math.round(n * 100) / 100).toFixed(2);
 }
 
+function resolveBuyerIdentityNumber(identityNumber?: string | null): string {
+  const value = identityNumber?.trim() || process.env.IYZICO_BUYER_IDENTITY_NUMBER?.trim();
+
+  if (!value || !/^\d{11}$/.test(value)) {
+    throw new Error('IYZICO_BUYER_IDENTITY_NUMBER eksik veya gecersiz. Production için gercek bir kimlik numarasi stratejisi tanimlanmali.');
+  }
+
+  return value;
+}
+
+function resolveBuyerIp(ip: string): string {
+  const value = ip.trim();
+
+  if (/^[0-9]{1,3}(?:\.[0-9]{1,3}){3}$/.test(value) || /^[0-9a-fA-F:]+$/.test(value)) {
+    return value;
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    return '127.0.0.1';
+  }
+
+  throw new Error('Buyer IP address could not be resolved for iyzico request.');
+}
+
 export async function initCheckoutForm(p: CheckoutInitParams): Promise<CheckoutInitResult> {
   const iyzipay = getIyzipay();
   const { first, last } = nameParts(p.shipping.name);
@@ -81,9 +107,9 @@ export async function initCheckoutForm(p: CheckoutInitParams): Promise<CheckoutI
       surname: last,
       gsmNumber: p.shipping.phone,
       email: p.userEmail,
-      identityNumber: '11111111111', // iyzico zorunlu — KVKK gereği toplamıyoruz
+      identityNumber: resolveBuyerIdentityNumber(p.buyerIdentityNumber),
       registrationAddress: p.shipping.address,
-      ip: '0.0.0.0',
+      ip: resolveBuyerIp(p.buyerIp),
       city: p.shipping.city,
       country: 'Turkey',
       zipCode: p.shipping.zip || '00000',
