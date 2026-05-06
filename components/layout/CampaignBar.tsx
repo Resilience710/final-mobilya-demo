@@ -94,16 +94,16 @@ export default function CampaignBar() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.14),_transparent_30%)]" />
             <div className="relative mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
               <div className="flex min-w-0 items-start gap-3">
-                <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm">
+                <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-white/15 bg-charcoal/35 text-white shadow-md shadow-black/15">
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/85">
+                    <span className="rounded-full border border-white/15 bg-charcoal/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-white shadow-md shadow-black/10">
                       {campaign.badge_text || 'Sınırlı Süre'}
                     </span>
                     {campaign.discount_percentage ? (
-                      <span className="rounded-full bg-black/15 px-3 py-1 text-xs font-semibold text-white">
+                      <span className="rounded-full bg-charcoal px-3 py-1 text-xs font-semibold text-white shadow-md shadow-black/15">
                         %{campaign.discount_percentage} indirim
                       </span>
                     ) : null}
@@ -121,7 +121,7 @@ export default function CampaignBar() {
 
               <div className="flex flex-wrap items-center gap-3 lg:justify-end">
                 {remaining ? (
-                  <div className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs text-white/88 backdrop-blur-sm">
+                  <div className="rounded-full border border-white/40 bg-white px-4 py-2 text-xs font-semibold text-charcoal shadow-lg shadow-black/15">
                     Bitişe {remaining.hours}s {remaining.minutes}dk
                   </div>
                 ) : null}
@@ -137,7 +137,7 @@ export default function CampaignBar() {
                 <button
                   onClick={dismiss}
                   aria-label="Kapat"
-                  className="rounded-full p-2 text-white/55 transition-colors hover:bg-white/10 hover:text-white"
+                  className="rounded-full border border-white/15 bg-charcoal/35 p-2 text-white transition-colors hover:bg-charcoal/55"
                 >
                   <X className="h-4 w-4" />
                 </button>

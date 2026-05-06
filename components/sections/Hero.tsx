@@ -87,7 +87,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="mb-5 inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/96 px-4 py-2 text-charcoal shadow-lg shadow-black/10"
+              className="mb-5 inline-flex items-center gap-3 rounded-full border border-gold/60 bg-charcoal px-4 py-2 text-white shadow-lg shadow-black/20"
             >
               <Sparkles className="h-4 w-4 text-gold" />
               <span className="text-[10px] font-semibold uppercase tracking-[0.28em]">{slide.label}</span>
@@ -191,7 +191,7 @@ export default function Hero() {
                 className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-all ${
                   index === current
                     ? 'bg-charcoal text-white shadow-lg shadow-black/20'
-                    : 'border border-stone/70 bg-[#f8f3ea] text-charcoal shadow-md shadow-black/5 hover:bg-white'
+                    : 'border border-charcoal/25 bg-white text-charcoal shadow-md shadow-black/5 hover:bg-[#f8f3ea]'
                 }`}
               >
                 {item.label}
