@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Hero from '@/components/sections/Hero';
 import CategoryGrid from '@/components/sections/CategoryGrid';
+import BrandStory from '@/components/sections/BrandStory';
 import FeaturedProducts from '@/components/sections/FeaturedProducts';
 import ShopTheLook from '@/components/sections/ShopTheLook';
-import TrustBar from '@/components/sections/TrustBar';
-import BrandStory from '@/components/sections/BrandStory';
-import Testimonials from '@/components/sections/Testimonials';
+import Bestsellers from '@/components/sections/Bestsellers';
 import InstagramFeed from '@/components/sections/InstagramFeed';
+import Testimonials from '@/components/sections/Testimonials';
+import TrustBar from '@/components/sections/TrustBar';
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -51,12 +52,13 @@ export default function HomePage() {
       />
       <Hero />
       <CategoryGrid />
-      <FeaturedProducts />
-      <TrustBar />
-      <ShopTheLook />
       <BrandStory />
+      <FeaturedProducts />
+      <ShopTheLook />
+      <Bestsellers />
       <InstagramFeed />
       <Testimonials />
+      <TrustBar />
     </>
   );
 }
