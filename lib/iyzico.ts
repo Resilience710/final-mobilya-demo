@@ -1,4 +1,5 @@
 import Iyzipay from 'iyzipay';
+import crypto from 'crypto';
 
 let cached: Iyzipay | null = null;
 
@@ -167,6 +168,46 @@ export interface RetrieveResult {
   cardAssociation?: string;
   errorMessage?: string;
   raw?: any;
+}
+
+function normalizeSignatureValue(value: unknown): string {
+  if (value == null) return '';
+  const stringValue = String(value);
+  if (!/^-?\d+(?:\.\d+)?$/.test(stringValue)) {
+    return stringValue;
+  }
+
+  return stringValue
+    .replace(/(\.\d*?[1-9])0+$/, '$1')
+    .replace(/\.0+$/, '')
+    .replace(/\.$/, '');
+}
+
+export function verifyCheckoutRetrieveSignature(raw: any, token: string): boolean {
+  const secretKey = process.env.IYZICO_SECRET_KEY;
+  const signature = typeof raw?.signature === 'string' ? raw.signature : '';
+
+  if (!secretKey || !signature) {
+    return false;
+  }
+
+  const parts = [
+    raw?.paymentStatus,
+    raw?.paymentId,
+    raw?.currency,
+    raw?.basketId,
+    raw?.conversationId,
+    raw?.paidPrice,
+    raw?.price,
+    token,
+  ].map(normalizeSignatureValue);
+
+  const expected = crypto
+    .createHmac('sha256', secretKey)
+    .update(parts.join(':'))
+    .digest('hex');
+
+  return expected === signature;
 }
 
 export async function retrieveCheckoutForm(token: string): Promise<RetrieveResult> {

@@ -1,5 +1,6 @@
 'use client';
 
+import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { Instagram, Youtube, Facebook } from 'lucide-react';
 
@@ -32,6 +33,41 @@ const trustItems = ['🚚 Ücretsiz Kargo', '🛡️ 5 Yıl Garanti', '🌿 Doğ
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const [email, setEmail] = useState('');
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [newsletterMessage, setNewsletterMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleNewsletterSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setNewsletterMessage(null);
+
+    if (!email.trim()) {
+      setNewsletterMessage({ type: 'error', text: 'E-posta adresinizi girin.' });
+      return;
+    }
+
+    setNewsletterLoading(true);
+
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Abonelik sırasında bir hata oluştu.');
+      }
+
+      setEmail('');
+      setNewsletterMessage({ type: 'success', text: 'Aboneliğiniz kaydedildi.' });
+    } catch (error: any) {
+      setNewsletterMessage({ type: 'error', text: error.message || 'Abonelik sırasında bir hata oluştu.' });
+    } finally {
+      setNewsletterLoading(false);
+    }
+  };
 
   return (
     <footer className="bg-charcoal text-stone">
@@ -42,15 +78,24 @@ export default function Footer() {
             <h2 className="font-serif text-display-sm text-cream mb-3">Yeniliklerden Haberdar Olun</h2>
             <p className="text-stone/70 text-sm max-w-md">Yeni koleksiyonlar, özel fırsatlar ve ilham verici içerikler için e-posta listemize katılın.</p>
           </div>
-          <form className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="email"
-              placeholder="E-posta adresiniz"
-              className="flex-1 bg-stone/10 border border-stone/20 px-5 py-3.5 rounded-xl text-sm text-cream placeholder-stone/50 outline-none focus:border-gold transition-colors"
-            />
-            <button type="submit" className="px-6 py-3.5 bg-gold text-charcoal text-sm font-medium rounded-xl hover:bg-gold-light transition-colors whitespace-nowrap">
+          <form onSubmit={handleNewsletterSubmit} className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="E-posta adresiniz"
+                className="flex-1 bg-stone/10 border border-stone/20 px-5 py-3.5 rounded-xl text-sm text-cream placeholder-stone/50 outline-none focus:border-gold transition-colors"
+              />
+              <button type="submit" disabled={newsletterLoading} className="px-6 py-3.5 bg-gold text-charcoal text-sm font-medium rounded-xl hover:bg-gold-light transition-colors whitespace-nowrap disabled:opacity-60">
               Abone Ol
-            </button>
+              </button>
+            </div>
+            {newsletterMessage ? (
+              <p className={`text-xs ${newsletterMessage.type === 'success' ? 'text-green-300' : 'text-red-300'}`}>
+                {newsletterMessage.text}
+              </p>
+            ) : null}
           </form>
         </div>
       </div>

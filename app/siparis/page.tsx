@@ -32,6 +32,7 @@ export default function CheckoutPage() {
     shipping_district: '',
     shipping_postal_code: '',
     shipping_phone: profile?.phone || '',
+    buyer_identity_number: '',
     customer_note: '',
   });
 
@@ -98,7 +99,10 @@ export default function CheckoutPage() {
       const payRes = await fetch('/api/payment/iyzico/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: data.order_id }),
+        body: JSON.stringify({
+          order_id: data.order_id,
+          buyer_identity_number: form.buyer_identity_number?.trim() || undefined,
+        }),
       });
 
       // iyzico aktif değilse (anahtar henüz yapılandırılmamış) eski akışa düş
@@ -219,6 +223,12 @@ export default function CheckoutPage() {
                         className="w-full pl-10 pr-4 py-3 bg-cream/50 border border-stone/30 rounded-xl text-charcoal placeholder:text-brown/30 focus:outline-none focus:ring-2 focus:ring-gold/40 text-sm" placeholder="0 5XX XXX XX XX" />
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-charcoal mb-1.5">TC Kimlik No</label>
+                    <input type="text" value={form.buyer_identity_number || ''} onChange={(e) => updateField('buyer_identity_number', e.target.value.replace(/\D/g, '').slice(0, 11))}
+                      className="w-full px-4 py-3 bg-cream/50 border border-stone/30 rounded-xl text-charcoal placeholder:text-brown/30 focus:outline-none focus:ring-2 focus:ring-gold/40 text-sm"
+                      placeholder="11 haneli kimlik numarası" />
+                  </div>
                 </div>
               </div>
 
@@ -237,6 +247,9 @@ export default function CheckoutPage() {
                 <h3 className="text-sm font-medium text-charcoal mb-2">🔒 Güvenli Ödeme</h3>
                 <p className="text-sm text-brown/70">
                   Ödemeniz iyzico'nun PCI-DSS sertifikalı güvenli sayfasında alınır. Kart bilgileriniz sitemize asla iletilmez.
+                </p>
+                <p className="text-xs text-brown/50 mt-2">
+                  iyzico entegrasyonunda ödeme başlatma için 11 haneli TC kimlik numarası gerekir. Bu alan sadece iyzico isteğinde kullanılır.
                 </p>
                 <p className="text-xs text-brown/50 mt-2">
                   Demo ortamında iyzico anahtarları tanımlı değilse sipariş kaydı demo olarak oluşturulur ve ödeme adımı atlanır.

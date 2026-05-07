@@ -166,6 +166,7 @@ export interface CheckoutFormData {
   shipping_district: string;
   shipping_postal_code: string;
   shipping_phone: string;
+  buyer_identity_number?: string;
   customer_note: string;
 }
 

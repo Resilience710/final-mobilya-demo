@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceSupabaseClient } from '@/lib/supabase/service';
-import { retrieveCheckoutForm, isIyzicoConfigured, moneyStr } from '@/lib/iyzico';
+import { retrieveCheckoutForm, isIyzicoConfigured, moneyStr, verifyCheckoutRetrieveSignature } from '@/lib/iyzico';
 
 /**
  * iyzico checkout form callback.
@@ -53,6 +53,11 @@ async function handle(req: NextRequest) {
   const result = await retrieveCheckoutForm(token);
   if (result.status !== 'success' || !result.conversationId) {
     return FAIL('verify-failed');
+  }
+
+  if (!verifyCheckoutRetrieveSignature(result.raw, token)) {
+    console.error('[iyzico/callback] signature verification failed');
+    return FAIL('signature-failed');
   }
 
   const orderId = result.conversationId;

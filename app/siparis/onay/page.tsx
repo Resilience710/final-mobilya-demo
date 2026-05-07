@@ -56,6 +56,7 @@ function OnayInner() {
       'token-mismatch': 'Güvenlik doğrulaması başarısız.',
       'payment-not-success': 'Ödeme tamamlanamadı.',
       'verify-failed': 'iyzico doğrulaması başarısız.',
+      'signature-failed': 'Ödeme yanıtı güvenlik doğrulamasını geçemedi.',
       'order-not-found': 'Sipariş bulunamadı.',
       'iyzico-not-configured': 'Ödeme sistemi şu an aktif değil.',
     };

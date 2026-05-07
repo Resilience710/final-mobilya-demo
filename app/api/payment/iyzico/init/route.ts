@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Giriş yapmanız gerekiyor.' }, { status: 401 });
     }
 
-    let body: { order_id?: string };
+    let body: { order_id?: string; buyer_identity_number?: string };
     try { body = await req.json(); } catch { return NextResponse.json({ error: 'Geçersiz istek.' }, { status: 400 }); }
 
     const orderId = body.order_id?.trim();
@@ -121,16 +121,34 @@ export async function POST(req: NextRequest) {
     if (!baseUrl) {
       return NextResponse.json({ error: 'Sunucu konfigürasyon hatası.' }, { status: 500 });
     }
+    if (!baseUrl.startsWith('https://')) {
+      return NextResponse.json({ error: 'iyzico callback adresi HTTPS olmalıdır.' }, { status: 500 });
+    }
 
     const buyerIp =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip')?.trim() ||
       '';
 
+    const requestIdentityNumber =
+      typeof body.buyer_identity_number === 'string'
+        ? body.buyer_identity_number.replace(/\D/g, '').trim()
+        : '';
+
+    if (requestIdentityNumber && !/^\d{11}$/.test(requestIdentityNumber)) {
+      return NextResponse.json({ error: 'TC kimlik numarası 11 haneli olmalıdır.' }, { status: 400 });
+    }
+
     const buyerIdentityNumber =
-      typeof user.user_metadata?.identity_number === 'string'
-        ? user.user_metadata.identity_number
-        : null;
+      requestIdentityNumber ||
+      (typeof user.user_metadata?.identity_number === 'string' ? user.user_metadata.identity_number : null);
+
+    if (!buyerIdentityNumber && !process.env.IYZICO_BUYER_IDENTITY_NUMBER) {
+      return NextResponse.json(
+        { error: 'Ödeme başlatmak için 11 haneli TC kimlik numarası gereklidir.' },
+        { status: 400 }
+      );
+    }
 
     const result = await initCheckoutForm({
       orderId: order.id,

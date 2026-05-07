@@ -33,7 +33,11 @@ export default function AdminBayilikPage() {
   const load = async () => {
     setLoading(true);
     const supabase = createClient();
-    let q = supabase.from('dealer_applications').select('*').order('created_at', { ascending: false });
+    let q = supabase
+      .from('dealer_applications')
+      .select('*')
+      .neq('company_name', '__newsletter__')
+      .order('created_at', { ascending: false });
     if (statusFilter) q = q.eq('status', statusFilter);
     if (cityFilter)   q = q.ilike('city', `%${cityFilter}%`);
     const { data } = await q;
