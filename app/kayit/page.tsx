@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
-import { useAuth } from '@/lib/auth-context';
 
 const MAX_ATTEMPTS = 3;
 const LOCKOUT_SECONDS = 120;
@@ -23,8 +21,6 @@ export default function RegisterPage() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
   const lockoutTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { signUp } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     return () => { if (lockoutTimer.current) clearInterval(lockoutTimer.current); };
@@ -74,15 +70,16 @@ export default function RegisterPage() {
       setError('Şifre en az bir rakam içermelidir.');
       return;
     }
-    if (!/[^A-Za-z0-9]/.test(password)) {
-      setError('Şifre en az bir özel karakter içermelidir (ör. !@#$%^&*).');
-      return;
-    }
 
     setLoading(true);
-    const { error } = await signUp(email, password, fullName);
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName, email, password }),
+    });
+    const data = await response.json().catch(() => ({}));
 
-    if (error) {
+    if (!response.ok) {
       const next = failedAttempts + 1;
       setFailedAttempts(next);
 
@@ -91,17 +88,21 @@ export default function RegisterPage() {
         startLockout();
         setError(`Çok fazla başarısız deneme. ${LOCKOUT_SECONDS} saniye bekleyin.`);
       } else {
-        const msg = error.message.toLowerCase();
+        const msg = String(data?.error || '').toLowerCase();
         if (msg.includes('already registered') || msg.includes('user already')) {
           setError('Kayıt tamamlanamadı. Lütfen e-postanızı kontrol edin.');
+        } else if (msg.includes('zaten bir hesap var')) {
+          setError('Bu e-posta adresiyle zaten bir hesap var.');
         } else if (msg.includes('rate limit') || msg.includes('only request this once')) {
           setError('Çok fazla deneme. Lütfen birkaç dakika bekleyip tekrar deneyin.');
+        } else if (msg.includes('birkaç dakika sonra')) {
+          setError('Çok fazla deneme. Lütfen birkaç dakika sonra tekrar deneyin.');
         } else if (msg.includes('password') && msg.includes('weak')) {
           setError('Şifreniz çok zayıf. Lütfen daha güçlü bir şifre seçin.');
         } else if (msg.includes('invalid email')) {
           setError('Geçersiz e-posta adresi.');
         } else {
-          setError('Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+          setError(data?.error || 'Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.');
         }
       }
       setLoading(false);
@@ -124,7 +125,7 @@ export default function RegisterPage() {
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 className="font-serif text-2xl text-charcoal mb-3">Kayıt Başarılı!</h2>
             <p className="text-brown/70 text-sm mb-6">
-              E-posta adresinize bir doğrulama bağlantısı gönderdik. Lütfen e-postanızı kontrol edin.
+              Hesabınız oluşturuldu. Artık giriş yapabilirsiniz.
             </p>
             <Link
               href="/giris"
@@ -238,8 +239,8 @@ export default function RegisterPage() {
                 <span className={`flex items-center gap-1 ${/[0-9]/.test(password) ? 'text-green-600' : 'text-brown/40'}`}>
                   {/[0-9]/.test(password) ? '✓' : '○'} Rakam
                 </span>
-                <span className={`flex items-center gap-1 ${/[^A-Za-z0-9]/.test(password) ? 'text-green-600' : 'text-brown/40'}`}>
-                  {/[^A-Za-z0-9]/.test(password) ? '✓' : '○'} Özel karakter
+                <span className="flex items-center gap-1 text-brown/50">
+                  ○ Özel karakter opsiyonel
                 </span>
               </div>
             )}
