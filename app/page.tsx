@@ -4,8 +4,8 @@ import CategoryGrid from '@/components/sections/CategoryGrid';
 import BrandStory from '@/components/sections/BrandStory';
 import FeaturedProducts from '@/components/sections/FeaturedProducts';
 import ShopTheLook from '@/components/sections/ShopTheLook';
-import Bestsellers from '@/components/sections/Bestsellers';
 import InstagramFeed from '@/components/sections/InstagramFeed';
+import BlogHighlights from '@/components/sections/BlogHighlights';
 import Testimonials from '@/components/sections/Testimonials';
 import TrustBar from '@/components/sections/TrustBar';
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site';
@@ -55,8 +55,8 @@ export default function HomePage() {
       <BrandStory />
       <FeaturedProducts />
       <ShopTheLook />
-      <Bestsellers />
       <InstagramFeed />
+      <BlogHighlights />
       <Testimonials />
       <TrustBar />
     </>

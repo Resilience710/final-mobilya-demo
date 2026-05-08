@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart } from 'lucide-react';
@@ -8,13 +8,72 @@ import { createClient } from '@/lib/supabase/client';
 import { Product, Campaign } from '@/lib/types';
 import { applyCampaignToProducts, pickActiveCampaign, resolveProductPricing } from '@/lib/campaigns';
 
-function formatPrice(n: number): string {
-  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(n);
+type TabKey = 'discounted' | 'bestsellers' | 'newest';
+
+const tabs: Array<{
+  key: TabKey;
+  label: string;
+  href: string;
+  cta: string;
+}> = [
+  {
+    key: 'discounted',
+    label: 'İndirimli Ürünler',
+    href: '/urunler?indirim=1',
+    cta: 'Tüm İndirimli Ürünleri Göster',
+  },
+  {
+    key: 'bestsellers',
+    label: 'En Çok Satanlar',
+    href: '/urunler?one-cikan=1',
+    cta: 'Tüm Çok Satanları Göster',
+  },
+  {
+    key: 'newest',
+    label: 'Yeni Ürünler',
+    href: '/urunler?siralama=yeni',
+    cta: 'Tüm Yeni Ürünleri Göster',
+  },
+];
+
+function formatPrice(value: number) {
+  return new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency: 'TRY',
+    minimumFractionDigits: 0,
+  }).format(value);
+}
+
+function takeUniqueProducts(source: Product[], usedIds: Set<string>, count = 4) {
+  const selection: Product[] = [];
+
+  for (const product of source) {
+    if (usedIds.has(product.id)) continue;
+    usedIds.add(product.id);
+    selection.push(product);
+    if (selection.length === count) break;
+  }
+
+  return selection;
+}
+
+function completeUniqueProducts(selection: Product[], source: Product[], usedIds: Set<string>, count = 4) {
+  if (selection.length >= count) return selection;
+
+  for (const product of source) {
+    if (usedIds.has(product.id)) continue;
+    usedIds.add(product.id);
+    selection.push(product);
+    if (selection.length === count) break;
+  }
+
+  return selection;
 }
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabKey>('discounted');
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -25,85 +84,169 @@ export default function FeaturedProducts() {
           .select('*, category:categories(*)')
           .eq('is_active', true)
           .order('created_at', { ascending: false })
-          .limit(5),
+          .limit(60),
         supabase.from('campaigns').select('*').eq('is_active', true),
       ]);
+
       const activeCampaign = pickActiveCampaign((campaignRows as Campaign[]) || []);
       setProducts(applyCampaignToProducts((productRows as Product[]) || [], activeCampaign));
       setLoading(false);
     };
+
     fetchProducts();
   }, []);
 
-  return (
-    <section className="bg-cream py-16 lg:py-24 border-t border-stone/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-center font-serif text-3xl sm:text-4xl text-charcoal mb-12 tracking-wide">
-          EN YENİ ÜRÜNLER
-        </h2>
+  const groupedProducts = useMemo(() => {
+    const newest = [...products].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+    const discounted = [...products]
+      .filter((product) => resolveProductPricing(product, product.active_campaign).hasDiscount)
+      .sort(
+        (a, b) =>
+          resolveProductPricing(b, b.active_campaign).discountPercent -
+          resolveProductPricing(a, a.active_campaign).discountPercent,
+      );
+    const bestsellers = [...products]
+      .filter((product) => product.is_featured)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
+    const usedIds = new Set<string>();
+    const discountedSelection = completeUniqueProducts(
+      takeUniqueProducts(discounted, usedIds, 4),
+      newest,
+      usedIds,
+      4,
+    );
+    const bestsellerSelection = completeUniqueProducts(
+      takeUniqueProducts(bestsellers, usedIds, 4),
+      newest,
+      usedIds,
+      4,
+    );
+    const newestSelection = completeUniqueProducts(
+      takeUniqueProducts(newest, usedIds, 4),
+      newest,
+      usedIds,
+      4,
+    );
+
+    return {
+      discounted: discountedSelection,
+      bestsellers: bestsellerSelection,
+      newest: newestSelection,
+    };
+  }, [products]);
+
+  const activeTabConfig = tabs.find((tab) => tab.key === activeTab) || tabs[0];
+  const visibleProducts = groupedProducts[activeTab];
+
+  return (
+    <section className="bg-white py-16 lg:py-24 border-t border-stone/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="border-b border-stone/20">
+          <div className="grid grid-cols-1 gap-2 pb-4 md:grid-cols-3 md:gap-6">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  onMouseEnter={() => setActiveTab(tab.key)}
+                  onFocus={() => setActiveTab(tab.key)}
+                  className={`relative pb-4 text-left text-2xl sm:text-3xl font-semibold transition-colors duration-200 ${
+                    isActive ? 'text-[#1f5aa8]' : 'text-brown/35 hover:text-charcoal'
+                  }`}
+                >
+                  {tab.label}
+                  <span
+                    className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-[#1f5aa8] transition-all duration-300 ${
+                      isActive ? 'w-full opacity-100' : 'w-0 opacity-0'
+                    }`}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {loading
-            ? Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="bg-stone/10 aspect-[3/4] animate-pulse" />
+            ? Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="h-[420px] rounded-[2rem] border border-stone/20 bg-stone/10 animate-pulse" />
               ))
-            : products.map(product => {
+            : visibleProducts.map((product) => {
                 const pricing = resolveProductPricing(product, product.active_campaign);
+                const isNewTab = activeTab === 'newest';
+
                 return (
                   <Link
                     key={product.id}
                     href={`/urun/${product.slug}`}
-                    className="group block"
+                    className="group rounded-[2rem] border border-stone/20 bg-white p-3 shadow-[0_18px_40px_rgba(28,28,26,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(28,28,26,0.1)]"
                   >
-                    <div className="relative bg-stone/10 aspect-[3/4] overflow-hidden mb-4">
-                      {pricing.discountPercent > 0 && (
-                        <span className="absolute top-3 left-3 z-10 bg-[#c94f3d] text-white text-[10px] font-bold px-2 py-1 tracking-wider">
-                          -%{pricing.discountPercent}
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-cream">
+                      {pricing.discountPercent > 0 ? (
+                        <span className="absolute left-3 top-3 z-10 rounded-full bg-[#d25842] px-3 py-1 text-xs font-semibold text-white">
+                          %{pricing.discountPercent} İndirim
                         </span>
-                      )}
+                      ) : isNewTab ? (
+                        <span className="absolute left-3 top-3 z-10 rounded-full bg-[#1f5aa8] px-3 py-1 text-xs font-semibold text-white">
+                          Yeni Ürün
+                        </span>
+                      ) : null}
+
                       <button
                         type="button"
                         aria-label="Favorilere ekle"
-                        onClick={(e) => e.preventDefault()}
-                        className="absolute top-3 right-3 z-10 text-charcoal/30 hover:text-red-500 transition-colors"
+                        onClick={(event) => event.preventDefault()}
+                        className="absolute right-3 top-3 z-10 rounded-full bg-white/90 p-2 text-charcoal/40 transition-colors hover:text-red-500"
                       >
                         <Heart className="w-5 h-5" />
                       </button>
+
                       <Image
-                        src={product.images?.[0] || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400'}
+                        src={product.images?.[0] || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=900&q=85'}
                         alt={product.name}
                         fill
-                        sizes="(max-width: 640px) 50vw, 20vw"
-                        className="object-contain p-6 transition-transform duration-700 group-hover:scale-105"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                     </div>
-                    <p className="text-center text-[10px] text-brown/40 tracking-wider mb-1">
-                      {product.category?.name || 'Final Mobilya'}
-                    </p>
-                    <h3 className="text-center text-sm font-medium text-charcoal uppercase tracking-wide mb-2 line-clamp-2">
-                      {product.name}
-                    </h3>
-                    <div className="text-center text-sm">
-                      {pricing.compareAtPrice ? (
-                        <>
-                          <span className="text-[#c94f3d] font-medium">{formatPrice(pricing.finalPrice)}</span>
-                          <span className="ml-2 text-brown/40 line-through">{formatPrice(pricing.compareAtPrice)}</span>
-                        </>
-                      ) : (
-                        <span className="text-charcoal font-medium">{formatPrice(pricing.finalPrice)}</span>
-                      )}
+
+                    <div className="px-2 pb-3 pt-5 text-center">
+                      <p className="text-xs uppercase tracking-[0.18em] text-brown/40">
+                        {product.category?.name || 'Final Mobilya'}
+                      </p>
+                      <h3 className="mt-3 text-xl font-medium text-charcoal line-clamp-2 min-h-[3.5rem]">
+                        {product.name}
+                      </h3>
+                      <div className="mt-4 text-2xl font-semibold text-charcoal">
+                        {pricing.compareAtPrice ? (
+                          <div className="flex flex-wrap items-center justify-center gap-2">
+                            <span className="text-[#d25842]">{formatPrice(pricing.finalPrice)}</span>
+                            <span className="text-lg font-normal text-brown/35 line-through">
+                              {formatPrice(pricing.compareAtPrice)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span>{formatPrice(pricing.finalPrice)}</span>
+                        )}
+                      </div>
                     </div>
                   </Link>
                 );
               })}
         </div>
 
-        <div className="text-center mt-12">
+        <div className="mt-12 text-center">
           <Link
-            href="/urunler?sirala=yeni"
-            className="inline-block border border-charcoal px-8 py-3 text-[11px] font-semibold tracking-[0.22em] uppercase text-charcoal hover:bg-charcoal hover:text-white transition-colors duration-300"
+            href={activeTabConfig.href}
+            className="inline-flex items-center justify-center border border-charcoal px-8 py-3 text-[11px] font-semibold tracking-[0.22em] uppercase text-charcoal transition-colors duration-300 hover:bg-charcoal hover:text-white"
           >
-            TÜM YENİ ÜRÜNLERİ GÖSTER
+            {activeTabConfig.cta}
           </Link>
         </div>
       </div>

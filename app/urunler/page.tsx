@@ -8,7 +8,7 @@ import { absoluteUrl, cleanText, SITE_NAME } from '@/lib/site';
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: { kategori?: string; siralama?: string; arama?: string };
+  searchParams: { kategori?: string; siralama?: string; arama?: string; indirim?: string; 'one-cikan'?: string };
 }): Promise<Metadata> {
   const supabase = createServerSupabaseClient();
   let title = 'Ürünler';
@@ -37,6 +37,18 @@ export async function generateMetadata({
     openGraphTitle = `${title} | ${SITE_NAME}`;
   }
 
+  if (searchParams.indirim === '1') {
+    title = 'İndirimli Ürünler';
+    description = `${SITE_NAME} kampanyalı ve indirimli ürünlerini keşfedin.`;
+    openGraphTitle = `${title} | ${SITE_NAME}`;
+  }
+
+  if (searchParams['one-cikan'] === '1') {
+    title = 'En Çok Satanlar';
+    description = `${SITE_NAME} öne çıkan ve en çok tercih edilen ürünlerini inceleyin.`;
+    openGraphTitle = `${title} | ${SITE_NAME}`;
+  }
+
   return {
     title,
     description,
@@ -54,7 +66,7 @@ export async function generateMetadata({
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: { kategori?: string; siralama?: string; arama?: string };
+  searchParams: { kategori?: string; siralama?: string; arama?: string; indirim?: string; 'one-cikan'?: string };
 }) {
   const supabase = createServerSupabaseClient();
 
@@ -96,6 +108,14 @@ export default async function ProductsPage({
 
   const { data: products } = await query;
   let resolvedProducts = applyCampaignToProducts((products as Product[]) || [], activeCampaign);
+
+  if (searchParams['one-cikan'] === '1') {
+    resolvedProducts = resolvedProducts.filter((product) => product.is_featured);
+  }
+
+  if (searchParams.indirim === '1') {
+    resolvedProducts = resolvedProducts.filter((product) => resolveProductPricing(product, product.active_campaign).hasDiscount);
+  }
 
   switch (searchParams.siralama) {
     case 'fiyat-artan':
