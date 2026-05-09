@@ -1,8 +1,15 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { Product, Campaign } from '@/lib/types';
+import { Product, Campaign, ProductDiscount } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import ProductDetailClient from './ProductDetailClient';
-import { applyCampaignToProduct, applyCampaignToProducts, pickActiveCampaign } from '@/lib/campaigns';
+import {
+  applyCampaignToProduct,
+  applyCampaignToProducts,
+  applyProductDiscountToProduct,
+  applyProductDiscountsToProducts,
+  pickActiveCampaign,
+  resolveProductPricing,
+} from '@/lib/campaigns';
 import { absoluteUrl, cleanText, SITE_NAME } from '@/lib/site';
 
 interface Props {
@@ -68,7 +75,21 @@ export default async function ProductDetailPage({ params }: Props) {
     .eq('is_active', true)
     .limit(4);
 
-  const resolvedProduct = applyCampaignToProduct(product as Product, activeCampaign);
+  const productIds = [product.id, ...(((relatedProducts as Product[]) || []).map((relatedProduct) => relatedProduct.id))];
+  const { data: productDiscountRows } = await supabase
+    .from('product_discounts')
+    .select('*')
+    .in('product_id', productIds);
+
+  const discountList = (productDiscountRows as ProductDiscount[]) || [];
+  const relatedOnlyDiscounts = discountList.filter((discount) => discount.product_id !== product.id);
+  const productDiscount = discountList.filter((discount) => discount.product_id === product.id);
+
+  const resolvedProduct = applyProductDiscountToProduct(
+    applyCampaignToProduct(product as Product, activeCampaign),
+    productDiscount,
+  );
+  const offerPricing = resolveProductPricing(resolvedProduct, resolvedProduct.active_campaign);
 
   return (
     <>
@@ -90,7 +111,7 @@ export default async function ProductDetailPage({ params }: Props) {
             offers: {
               '@type': 'Offer',
               priceCurrency: resolvedProduct.currency || 'TRY',
-              price: resolvedProduct.discount_price ?? resolvedProduct.base_price,
+              price: offerPricing.finalPrice,
               availability: resolvedProduct.stock_quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
               url: absoluteUrl(`/urun/${resolvedProduct.slug}`),
             },
@@ -99,7 +120,10 @@ export default async function ProductDetailPage({ params }: Props) {
       />
       <ProductDetailClient
         product={resolvedProduct}
-        relatedProducts={applyCampaignToProducts((relatedProducts as Product[]) || [], activeCampaign)}
+        relatedProducts={applyProductDiscountsToProducts(
+          applyCampaignToProducts((relatedProducts as Product[]) || [], activeCampaign),
+          relatedOnlyDiscounts,
+        )}
       />
     </>
   );

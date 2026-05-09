@@ -13,6 +13,7 @@ interface Props {
   activeCategory: string | null;
   activeSort: string | null;
   searchQuery: string | null;
+  showDiscountCountdown?: boolean;
 }
 
 const sortOptions = [
@@ -22,7 +23,14 @@ const sortOptions = [
   { value: 'fiyat-azalan', label: 'Fiyat: Yüksekten Düşüğe' },
 ];
 
-export default function ProductsClient({ products, categories, activeCategory, activeSort, searchQuery }: Props) {
+export default function ProductsClient({
+  products,
+  categories,
+  activeCategory,
+  activeSort,
+  searchQuery,
+  showDiscountCountdown = false,
+}: Props) {
   const router = useRouter();
   const [search, setSearch] = useState(searchQuery || '');
   const [showFilters, setShowFilters] = useState(false);
@@ -209,7 +217,7 @@ export default function ProductsClient({ products, categories, activeCategory, a
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05, duration: 0.4 }}
               >
-                <ProductCard product={product} viewMode={viewMode} />
+                <ProductCard product={product} viewMode={viewMode} showDiscountCountdown={showDiscountCountdown} />
               </motion.div>
             ))}
           </div>

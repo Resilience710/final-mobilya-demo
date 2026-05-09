@@ -1,8 +1,13 @@
 import type { Metadata } from 'next';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { Product, Category, Campaign } from '@/lib/types';
+import { Product, Category, Campaign, ProductDiscount } from '@/lib/types';
 import ProductsClient from './ProductsClient';
-import { applyCampaignToProducts, pickActiveCampaign, resolveProductPricing } from '@/lib/campaigns';
+import {
+  applyCampaignToProducts,
+  applyProductDiscountsToProducts,
+  pickActiveCampaign,
+  resolveProductPricing,
+} from '@/lib/campaigns';
 import { absoluteUrl, cleanText, SITE_NAME } from '@/lib/site';
 
 export async function generateMetadata({
@@ -107,7 +112,17 @@ export default async function ProductsPage({
   query = query.order('is_featured', { ascending: false }).order('created_at', { ascending: false });
 
   const { data: products } = await query;
-  let resolvedProducts = applyCampaignToProducts((products as Product[]) || [], activeCampaign);
+  const baseProducts = (products as Product[]) || [];
+  const productIds = baseProducts.map((product) => product.id);
+  const { data: productDiscountRows } = productIds.length
+    ? await supabase
+        .from('product_discounts')
+        .select('*')
+        .in('product_id', productIds)
+    : { data: [] as ProductDiscount[] };
+
+  let resolvedProducts = applyCampaignToProducts(baseProducts, activeCampaign);
+  resolvedProducts = applyProductDiscountsToProducts(resolvedProducts, (productDiscountRows as ProductDiscount[]) || []);
 
   if (searchParams['one-cikan'] === '1') {
     resolvedProducts = resolvedProducts.filter((product) => product.is_featured);
@@ -156,6 +171,7 @@ export default async function ProductsPage({
         activeCategory={searchParams.kategori || null}
         activeSort={searchParams.siralama || null}
         searchQuery={searchParams.arama || null}
+        showDiscountCountdown={searchParams.indirim === '1'}
       />
     </>
   );

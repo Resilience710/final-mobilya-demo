@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -24,6 +24,9 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [checkoutMode, setCheckoutMode] = useState<'payment' | 'demo'>('payment');
+  const [shippingCost, setShippingCost] = useState(499);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingNote, setShippingNote] = useState('Teslimat adresine göre hesaplanır.');
 
   const [form, setForm] = useState<CheckoutFormData>({
     shipping_name: profile?.full_name || '',
@@ -36,8 +39,43 @@ export default function CheckoutPage() {
     customer_note: '',
   });
 
-  const shippingCost = subtotal >= 5000 ? 0 : 499;
   const totalPrice = subtotal + shippingCost;
+
+  useEffect(() => {
+    if (!form.shipping_city.trim()) {
+      setShippingCost(499);
+      setShippingNote('Teslimat adresine göre hesaplanır.');
+      return;
+    }
+
+    const controller = new AbortController();
+    const loadShipping = async () => {
+      try {
+        setShippingLoading(true);
+        const params = new URLSearchParams({
+          city: form.shipping_city,
+          district: form.shipping_district,
+        });
+        const res = await fetch(`/api/shipping/quote?${params.toString()}`, { signal: controller.signal });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Nakliyat hesaplanamadı.');
+        setShippingCost(Number(data.price) || 0);
+        setShippingNote(data.matchedRule?.note || 'Seçilen bölge için aktif nakliyat kuralı uygulandı.');
+      } catch (error: any) {
+        if (error.name === 'AbortError') return;
+        setShippingCost(499);
+        setShippingNote('Varsayılan nakliyat ücreti uygulanıyor.');
+      } finally {
+        setShippingLoading(false);
+      }
+    };
+
+    const timeout = window.setTimeout(loadShipping, 250);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [form.shipping_city, form.shipping_district]);
 
   if (!user) {
     return (
@@ -296,12 +334,10 @@ export default function CheckoutPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-brown/60 flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Kargo</span>
                   <span className={shippingCost === 0 ? 'text-green-600' : 'text-charcoal'}>
-                    {shippingCost === 0 ? 'Ücretsiz' : formatPrice(shippingCost)}
+                    {shippingLoading ? 'Hesaplanıyor...' : shippingCost === 0 ? 'Ücretsiz' : formatPrice(shippingCost)}
                   </span>
                 </div>
-                {shippingCost > 0 && (
-                  <p className="text-xs text-brown/40">5.000 ₺ üzeri siparişlerde ücretsiz kargo</p>
-                )}
+                <p className="text-xs text-brown/40">{shippingNote}</p>
                 <div className="flex justify-between pt-3 border-t border-stone/20">
                   <span className="font-medium text-charcoal">Toplam</span>
                   <span className="font-serif text-xl text-charcoal">{formatPrice(totalPrice)}</span>

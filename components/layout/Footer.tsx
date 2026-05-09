@@ -17,6 +17,7 @@ const footerLinks: Record<string, { label: string; href: string }[]> = {
   'Yardım': [
     { label: 'Hesabım', href: '/hesabim' },
     { label: 'Siparişlerim', href: '/hesabim/siparislerim' },
+    { label: 'Nakliyat', href: '/nakliyat' },
     { label: 'Kargo & Teslimat', href: '/kargo-teslimat' },
     { label: 'İade & Değişim', href: '/iade-degisim' },
     { label: 'İletişim', href: '/iletisim' },

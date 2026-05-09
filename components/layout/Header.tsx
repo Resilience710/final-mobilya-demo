@@ -337,6 +337,7 @@ const megaMenuItems: MenuItem[] = [
 const topLinks = [
   { label: 'Ana Sayfa', href: '/' },
   { label: 'Şubelerimiz', href: '/subelerimiz' },
+  { label: 'Nakliyat', href: '/nakliyat' },
   { label: 'Bayilik', href: '/bayilik' },
 ];
 

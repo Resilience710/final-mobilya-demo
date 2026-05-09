@@ -4,7 +4,7 @@ import { ReactNode, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Package, ShoppingCart, Users, Menu, X, LogOut, ChevronLeft, BarChart2, Handshake, Megaphone, MapPin, LayoutGrid, Mail } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Menu, X, LogOut, ChevronLeft, BarChart2, Handshake, Megaphone, MapPin, LayoutGrid, Mail, Images, Tags } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 const navItems = [
@@ -17,6 +17,9 @@ const navItems = [
   { href: '/admin/bayilik', label: 'Bayilik', icon: Handshake },
   { href: '/admin/newsletter', label: 'Newsletter', icon: Mail },
   { href: '/admin/kampanyalar', label: 'Kampanyalar', icon: Megaphone },
+  { href: '/admin/indirimler', label: 'Ürün İndirimleri', icon: Tags },
+  { href: '/admin/nakliyat', label: 'Nakliyat', icon: MapPin },
+  { href: '/admin/anasayfa', label: 'Ana Sayfa', icon: Images },
   { href: '/admin/subeler', label: 'Şubeler', icon: MapPin },
 ];
 

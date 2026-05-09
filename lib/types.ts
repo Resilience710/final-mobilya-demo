@@ -6,6 +6,7 @@ export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | '
 export type PaymentStatus = 'awaiting' | 'pending' | 'paid' | 'failed' | 'refunded';
 export type CampaignScope = 'all' | 'featured' | 'category';
 export type CampaignTheme = 'sunset' | 'forest' | 'midnight';
+export type ProductDiscountType = 'percentage' | 'fixed';
 
 export interface Profile {
   id: string;
@@ -73,6 +74,42 @@ export interface Product {
   variants?: ProductVariant[];
   reviews?: Review[];
   active_campaign?: Campaign | null;
+  active_product_discount?: ProductDiscount | null;
+  has_product_discount_schedule?: boolean;
+}
+
+export interface ProductDiscount {
+  id: string;
+  product_id: string;
+  title: string | null;
+  discount_type: ProductDiscountType;
+  discount_value: number;
+  is_active: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface ShippingRule {
+  id: string;
+  city: string;
+  district: string | null;
+  price: number;
+  is_active: boolean;
+  note: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface HomepageGalleryItem {
+  id: string;
+  slot_index: number;
+  image_url: string | null;
+  alt_text: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface ProductVariant {

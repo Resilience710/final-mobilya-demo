@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -11,16 +12,30 @@ import { resolveProductPricing } from '@/lib/campaigns';
 interface Props {
   product: Product;
   viewMode?: 'grid' | 'list';
+  showDiscountCountdown?: boolean;
 }
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
 }
 
-export default function ProductCard({ product, viewMode = 'grid' }: Props) {
+export default function ProductCard({ product, viewMode = 'grid', showDiscountCountdown = false }: Props) {
   const { addItem } = useCart();
   const pricing = resolveProductPricing(product, product.active_campaign);
   const campaignLabel = product.active_campaign?.badge_text || (pricing.appliedCampaign ? 'Sezon Fırsatı' : null);
+  const [now, setNow] = useState(Date.now());
+  const countdown = showDiscountCountdown && product.active_product_discount?.end_date
+    ? getCountdownLabel(product.active_product_discount.end_date, now)
+    : null;
+
+  useEffect(() => {
+    if (!showDiscountCountdown || !product.active_product_discount?.end_date) {
+      return;
+    }
+
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [product.active_product_discount?.end_date, showDiscountCountdown]);
 
   if (viewMode === 'list') {
     return (
@@ -70,6 +85,11 @@ export default function ProductCard({ product, viewMode = 'grid' }: Props) {
                   {pricing.discountPercent > 0 ? <span>%{pricing.discountPercent} avantaj</span> : null}
                   {product.stock_quantity > 0 && product.stock_quantity <= 5 ? <span>Son {product.stock_quantity} adet</span> : null}
                 </div>
+                {countdown ? (
+                  <p className="mt-2 text-sm font-medium text-[#d25842]">
+                    İndirim bitimine: {countdown}
+                  </p>
+                ) : null}
               </div>
 
               <div className="flex items-center gap-2">
@@ -173,6 +193,11 @@ export default function ProductCard({ product, viewMode = 'grid' }: Props) {
                 {pricing.appliedCampaign ? <span>Kampanya uygulandı</span> : null}
                 {product.stock_quantity > 0 && product.stock_quantity <= 5 ? <span>Son {product.stock_quantity} adet</span> : null}
               </div>
+              {countdown ? (
+                <p className="mt-2 text-sm font-medium text-[#d25842]">
+                  İndirim bitimine: {countdown}
+                </p>
+              ) : null}
             </div>
             <motion.div
               initial={{ opacity: 0.75 }}
@@ -187,4 +212,19 @@ export default function ProductCard({ product, viewMode = 'grid' }: Props) {
       </Link>
     </div>
   );
+}
+
+function getCountdownLabel(endDate: string, now: number) {
+  const remaining = new Date(endDate).getTime() - now;
+
+  if (remaining <= 0) {
+    return 'Süre doldu';
+  }
+
+  const days = Math.floor(remaining / 86_400_000);
+  const hours = Math.floor((remaining % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((remaining % 3_600_000) / 60_000);
+  const seconds = Math.floor((remaining % 60_000) / 1000);
+
+  return `${days}g ${hours}s ${minutes}dk ${seconds}sn`;
 }

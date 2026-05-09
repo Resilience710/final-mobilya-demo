@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import CategoryClientPage from './CategoryClientPage';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { Product, Category, Campaign } from '@/lib/types';
-import { applyCampaignToProducts, pickActiveCampaign } from '@/lib/campaigns';
+import { Product, Category, Campaign, ProductDiscount } from '@/lib/types';
+import { applyCampaignToProducts, applyProductDiscountsToProducts, pickActiveCampaign } from '@/lib/campaigns';
 import { absoluteUrl, cleanText, SITE_NAME } from '@/lib/site';
 
 interface Props {
@@ -61,7 +61,18 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     .eq('is_active', true);
 
   const activeCampaign = pickActiveCampaign((campaignRows as Campaign[]) ?? []);
-  const resolvedProducts = applyCampaignToProducts((products as Product[]) || [], activeCampaign);
+  const productList = (products as Product[]) || [];
+  const productIds = productList.map((product) => product.id);
+  const { data: productDiscountRows } = productIds.length
+    ? await supabase
+        .from('product_discounts')
+        .select('*')
+        .in('product_id', productIds)
+    : { data: [] as ProductDiscount[] };
+  const resolvedProducts = applyProductDiscountsToProducts(
+    applyCampaignToProducts(productList, activeCampaign),
+    (productDiscountRows as ProductDiscount[]) || [],
+  );
 
   return (
     <>

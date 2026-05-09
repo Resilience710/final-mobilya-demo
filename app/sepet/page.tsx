@@ -12,16 +12,12 @@ import AnimatedSection from '@/components/ui/AnimatedSection';
 import { useLang } from '@/lib/i18n';
 import { resolveProductPricing } from '@/lib/campaigns';
 
-const KARGO_LIMIT = 5000;
-const KARGO_UCRET = 499;
-
 export default function SepetPage() {
   const { items, removeItem, updateQuantity, subtotal, clearCart } = useCart();
   const [step, setStep] = useState<'cart' | 'checkout' | 'success'>('cart');
   const { t } = useLang();
 
   const finalPrice = subtotal;
-  const freeShipping = subtotal >= KARGO_LIMIT;
 
   if (step === 'success') {
     return (
@@ -77,29 +73,12 @@ export default function SepetPage() {
           <div className="grid lg:grid-cols-[1fr_380px] gap-10">
             {/* Cart items */}
             <div>
-              {/* Free shipping progress */}
-              {!freeShipping && (
-                <AnimatedSection className="bg-beige border border-stone p-4 mb-6 flex items-center gap-3">
-                  <Truck className="w-4 h-4 text-gold flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-xs text-brown">
-                      {t.cart.freeShippingProgress(formatPrice(KARGO_LIMIT - subtotal))}
-                    </p>
-                    <div className="mt-2 h-1 bg-stone rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gold transition-all duration-500"
-                        style={{ width: `${Math.min(100, (subtotal / KARGO_LIMIT) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </AnimatedSection>
-              )}
-              {freeShipping && (
-                <AnimatedSection className="bg-olive/10 border border-olive/20 p-4 mb-6 flex items-center gap-3">
-                  <Truck className="w-4 h-4 text-olive flex-shrink-0" />
-                  <p className="text-xs text-olive font-medium">{t.cart.freeShippingEarned}</p>
-                </AnimatedSection>
-              )}
+              <AnimatedSection className="bg-beige border border-stone p-4 mb-6 flex items-center gap-3">
+                <Truck className="w-4 h-4 text-gold flex-shrink-0" />
+                <p className="text-xs text-brown">
+                  Nakliyat ücreti artık teslimat il ve ilçe bilgisine göre ödeme adımında hesaplanır.
+                </p>
+              </AnimatedSection>
 
               <ul className="divide-y divide-stone/40">
                 {items.map((item) => (
@@ -185,13 +164,11 @@ export default function SepetPage() {
                   </div>
                   <div className="flex justify-between text-brown">
                     <span>{t.cart.shipping}</span>
-                    <span className={freeShipping ? 'text-olive font-medium' : 'text-charcoal'}>
-                      {freeShipping ? t.cart.freeShipping : formatPrice(KARGO_UCRET)}
-                    </span>
+                    <span className="text-charcoal">Adrese göre hesaplanır</span>
                   </div>
                   <div className="flex justify-between font-semibold text-charcoal text-base pt-3 border-t border-stone">
                     <span>{t.cart.total}</span>
-                    <span>{formatPrice(finalPrice + (freeShipping ? 0 : KARGO_UCRET))}</span>
+                    <span>{formatPrice(finalPrice)}</span>
                   </div>
                 </div>
 

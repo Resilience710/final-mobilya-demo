@@ -5,8 +5,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Heart } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { Product, Campaign } from '@/lib/types';
-import { applyCampaignToProducts, pickActiveCampaign, resolveProductPricing } from '@/lib/campaigns';
+import { Product, Campaign, ProductDiscount } from '@/lib/types';
+import {
+  applyCampaignToProducts,
+  applyProductDiscountsToProducts,
+  pickActiveCampaign,
+  resolveProductPricing,
+} from '@/lib/campaigns';
 
 type TabKey = 'discounted' | 'bestsellers' | 'newest';
 
@@ -74,11 +79,17 @@ export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('discounted');
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
       const supabase = createClient();
-      const [{ data: productRows }, { data: campaignRows }] = await Promise.all([
+      const [{ data: productRows }, { data: campaignRows }, { data: productDiscountRows }] = await Promise.all([
         supabase
           .from('products')
           .select('*, category:categories(*)')
@@ -86,10 +97,12 @@ export default function FeaturedProducts() {
           .order('created_at', { ascending: false })
           .limit(60),
         supabase.from('campaigns').select('*').eq('is_active', true),
+        supabase.from('product_discounts').select('*'),
       ]);
 
       const activeCampaign = pickActiveCampaign((campaignRows as Campaign[]) || []);
-      setProducts(applyCampaignToProducts((productRows as Product[]) || [], activeCampaign));
+      const campaignProducts = applyCampaignToProducts((productRows as Product[]) || [], activeCampaign);
+      setProducts(applyProductDiscountsToProducts(campaignProducts, (productDiscountRows as ProductDiscount[]) || []));
       setLoading(false);
     };
 
@@ -100,8 +113,15 @@ export default function FeaturedProducts() {
     const newest = [...products].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
+    const timedDiscounted = [...products]
+      .filter((product) => !!product.active_product_discount)
+      .sort((a, b) => {
+        const aEnd = a.active_product_discount?.end_date ? new Date(a.active_product_discount.end_date).getTime() : 0;
+        const bEnd = b.active_product_discount?.end_date ? new Date(b.active_product_discount.end_date).getTime() : 0;
+        return aEnd - bEnd;
+      });
     const discounted = [...products]
-      .filter((product) => resolveProductPricing(product, product.active_campaign).hasDiscount)
+      .filter((product) => resolveProductPricing(product, product.active_campaign).hasDiscount && !product.active_product_discount)
       .sort(
         (a, b) =>
           resolveProductPricing(b, b.active_campaign).discountPercent -
@@ -113,8 +133,8 @@ export default function FeaturedProducts() {
 
     const usedIds = new Set<string>();
     const discountedSelection = completeUniqueProducts(
-      takeUniqueProducts(discounted, usedIds, 4),
-      newest,
+      takeUniqueProducts(timedDiscounted, usedIds, 4),
+      discounted,
       usedIds,
       4,
     );
@@ -180,6 +200,9 @@ export default function FeaturedProducts() {
             : visibleProducts.map((product) => {
                 const pricing = resolveProductPricing(product, product.active_campaign);
                 const isNewTab = activeTab === 'newest';
+                const countdown = product.active_product_discount?.end_date
+                  ? getCountdownLabel(product.active_product_discount.end_date, now)
+                  : null;
 
                 return (
                   <Link
@@ -235,6 +258,11 @@ export default function FeaturedProducts() {
                           <span>{formatPrice(pricing.finalPrice)}</span>
                         )}
                       </div>
+                      {activeTab === 'discounted' && countdown ? (
+                        <p className="mt-3 text-sm font-medium text-[#d25842]">
+                          İndirim bitimine: {countdown}
+                        </p>
+                      ) : null}
                     </div>
                   </Link>
                 );
@@ -252,4 +280,19 @@ export default function FeaturedProducts() {
       </div>
     </section>
   );
+}
+
+function getCountdownLabel(endDate: string, now: number) {
+  const remaining = new Date(endDate).getTime() - now;
+
+  if (remaining <= 0) {
+    return 'Süre doldu';
+  }
+
+  const days = Math.floor(remaining / 86_400_000);
+  const hours = Math.floor((remaining % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((remaining % 3_600_000) / 60_000);
+  const seconds = Math.floor((remaining % 60_000) / 1000);
+
+  return `${days}g ${hours}s ${minutes}dk ${seconds}sn`;
 }
