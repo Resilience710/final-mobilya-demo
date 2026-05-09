@@ -12,7 +12,7 @@ function formatPrice(price: number): string {
 }
 
 export default function CartDrawer() {
-  const { items, isOpen, setIsOpen, removeItem, updateQuantity, subtotal, itemCount } = useCart();
+  const { items, isOpen, setIsOpen, removeItem, updateQuantity, subtotal, shippingSelection, shippingCost, total, itemCount } = useCart();
 
   return (
     <AnimatePresence>
@@ -139,7 +139,21 @@ export default function CartDrawer() {
                   <span className="text-sm text-brown/60">Ara Toplam</span>
                   <span className="font-serif text-xl text-charcoal">{formatPrice(subtotal)}</span>
                 </div>
-                <p className="text-xs text-brown/40">Kargo ücreti sipariş sırasında hesaplanır.</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-brown/60">Nakliyat</span>
+                  <span className="text-sm text-charcoal">
+                    {shippingSelection ? (shippingCost === 0 ? 'Ücretsiz' : formatPrice(shippingCost)) : 'Seçilmedi'}
+                  </span>
+                </div>
+                <p className="text-xs text-brown/40">
+                  {shippingSelection
+                    ? `${shippingSelection.city} / ${shippingSelection.district}`
+                    : 'Ürün detayında il ve ilçe seçerek nakliyat belirleyin.'}
+                </p>
+                <div className="flex items-center justify-between border-t border-stone/40 pt-4">
+                  <span className="text-sm font-medium text-brown/70">Toplam</span>
+                  <span className="font-serif text-xl text-charcoal">{formatPrice(total)}</span>
+                </div>
                 <div className="space-y-2">
                   <Link
                     href="/siparis"

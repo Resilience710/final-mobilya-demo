@@ -16,7 +16,7 @@ function formatPrice(price: number): string {
 }
 
 export default function CheckoutPage() {
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal, clearCart, shippingSelection } = useCart();
   const { user, profile } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -24,15 +24,17 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [checkoutMode, setCheckoutMode] = useState<'payment' | 'demo'>('payment');
-  const [shippingCost, setShippingCost] = useState(499);
+  const [shippingCost, setShippingCost] = useState(shippingSelection?.price ?? 499);
   const [shippingLoading, setShippingLoading] = useState(false);
-  const [shippingNote, setShippingNote] = useState('Teslimat adresine göre hesaplanır.');
+  const [shippingNote, setShippingNote] = useState(
+    shippingSelection?.note || 'Teslimat adresine göre hesaplanır.',
+  );
 
   const [form, setForm] = useState<CheckoutFormData>({
     shipping_name: profile?.full_name || '',
     shipping_address: '',
-    shipping_city: '',
-    shipping_district: '',
+    shipping_city: shippingSelection?.city || '',
+    shipping_district: shippingSelection?.district || '',
     shipping_postal_code: '',
     shipping_phone: profile?.phone || '',
     buyer_identity_number: '',

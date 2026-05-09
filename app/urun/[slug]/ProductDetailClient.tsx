@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Heart, Truck, Shield, RotateCcw, Minus, Plus, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Heart, Truck, Shield, RotateCcw, Minus, Plus, ChevronRight, Loader2, MapPin } from 'lucide-react';
 import { Product, ProductVariant } from '@/lib/types';
 import { useCart } from '@/lib/cart-context';
 import ProductCard from '@/components/product/ProductCard';
 import { resolveProductPricing } from '@/lib/campaigns';
+import { turkeyProvinces } from '@/lib/turkey-locations';
 
 interface Props {
   product: Product;
@@ -25,18 +26,77 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   );
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [city, setCity] = useState('');
+  const [district, setDistrict] = useState('');
+  const [shippingCost, setShippingCost] = useState<number | null>(null);
+  const [shippingNote, setShippingNote] = useState('İl ve ilçe seçmeden sepete eklenemez.');
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingError, setShippingError] = useState('');
   const { addItem } = useCart();
 
   const pricing = resolveProductPricing(product, product.active_campaign);
   const variantModifier = selectedVariant?.price_modifier || 0;
   const totalPrice = pricing.finalPrice + variantModifier;
+  const provinces = useMemo(() => turkeyProvinces.map((province) => province.name), []);
+  const districts = useMemo(
+    () => turkeyProvinces.find((province) => province.name === city)?.districts || [],
+    [city],
+  );
+  const canAddToCart = product.stock_quantity > 0 && !!city && !!district && shippingCost !== null && !shippingLoading;
 
   const images = product.images?.length > 0
     ? product.images
     : ['https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800'];
 
+  useEffect(() => {
+    if (!city || !district) {
+      setShippingCost(null);
+      setShippingError('');
+      setShippingNote('İl ve ilçe seçmeden sepete eklenemez.');
+      return;
+    }
+
+    const controller = new AbortController();
+    const loadShipping = async () => {
+      try {
+        setShippingLoading(true);
+        setShippingError('');
+        const params = new URLSearchParams({ city, district });
+        const response = await fetch(`/api/shipping/quote?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Nakliyat hesaplanamadı.');
+        }
+        setShippingCost(Number(data.price) || 0);
+        setShippingNote(data.matchedRule?.note || data.note || 'Nakliyat fiyatı seçilen il ve ilçe için hesaplandı.');
+      } catch (error: any) {
+        if (error.name === 'AbortError') return;
+        setShippingCost(null);
+        setShippingError(error.message || 'Nakliyat hesaplanamadı.');
+      } finally {
+        setShippingLoading(false);
+      }
+    };
+
+    loadShipping();
+    return () => controller.abort();
+  }, [city, district]);
+
   const handleAddToCart = () => {
-    addItem(product, selectedVariant, quantity);
+    if (!canAddToCart || shippingCost === null) {
+      setShippingError('Sepete eklemeden önce il ve ilçe seçip nakliyat fiyatını hesaplayın.');
+      return;
+    }
+
+    addItem(product, selectedVariant, quantity, {
+      city,
+      district,
+      price: shippingCost,
+      note: shippingNote,
+    });
+    setShippingError('');
   };
 
   const specs = product.specifications || {};
@@ -194,15 +254,68 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               )}
             </div>
 
+            <div className="mb-8 rounded-2xl border border-stone/20 bg-white p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="w-5 h-5 text-gold" />
+                <h3 className="text-sm font-medium text-charcoal">Nakliyat Hesapla</h3>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-charcoal/55">İl</span>
+                  <select
+                    value={city}
+                    onChange={(event) => {
+                      setCity(event.target.value);
+                      setDistrict('');
+                    }}
+                    className="w-full rounded-xl border border-stone/30 bg-cream/50 px-4 py-3 text-sm text-charcoal focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/30"
+                  >
+                    <option value="">İl seçin</option>
+                    {provinces.map((province) => (
+                      <option key={province} value={province}>{province}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-charcoal/55">İlçe</span>
+                  <select
+                    value={district}
+                    onChange={(event) => setDistrict(event.target.value)}
+                    disabled={!city}
+                    className="w-full rounded-xl border border-stone/30 bg-cream/50 px-4 py-3 text-sm text-charcoal focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/30 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value="">{city ? 'İlçe seçin' : 'Önce il seçin'}</option>
+                    {districts.map((item) => (
+                      <option key={item} value={item}>{item}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="mt-4 rounded-xl border border-stone/15 bg-cream px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-brown/60">Nakliyat</span>
+                  <span className="text-lg font-semibold text-charcoal">
+                    {shippingLoading ? 'Hesaplanıyor...' : shippingCost === null ? '---' : shippingCost === 0 ? 'Ücretsiz' : formatPrice(shippingCost)}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-brown/60">
+                  {shippingNote}
+                </p>
+                {shippingError ? (
+                  <p className="mt-2 text-sm font-medium text-red-500">{shippingError}</p>
+                ) : null}
+              </div>
+            </div>
+
             {/* Actions */}
             <div className="flex gap-3 mb-8">
               <button
                 onClick={handleAddToCart}
-                disabled={product.stock_quantity === 0}
-                className="flex-1 flex items-center justify-center gap-2 py-4 bg-charcoal text-white font-medium rounded-xl hover:bg-gold disabled:opacity-50 transition-all duration-300 text-base"
+                disabled={!canAddToCart}
+                className="flex-1 flex items-center justify-center gap-2 py-4 bg-charcoal text-white font-medium rounded-xl hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-300 text-base"
               >
-                <ShoppingBag className="w-5 h-5" />
-                {product.stock_quantity === 0 ? 'Tükendi' : 'Sepete Ekle'}
+                {shippingLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShoppingBag className="w-5 h-5" />}
+                {product.stock_quantity === 0 ? 'Tükendi' : !city || !district ? 'İl ve İlçe Seçin' : 'Sepete Ekle'}
               </button>
               <button className="p-4 bg-white border border-stone/40 rounded-xl hover:border-red-300 hover:text-red-500 transition-colors">
                 <Heart className="w-5 h-5" />
@@ -213,7 +326,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
             <div className="grid grid-cols-3 gap-3">
               <div className="flex items-center gap-2 p-3 bg-white rounded-xl border border-stone/20">
                 <Truck className="w-5 h-5 text-gold flex-shrink-0" />
-                <span className="text-xs text-charcoal">Ücretsiz Kargo</span>
+                <span className="text-xs text-charcoal">İl ve İlçeye Göre Nakliyat</span>
               </div>
               <div className="flex items-center gap-2 p-3 bg-white rounded-xl border border-stone/20">
                 <Shield className="w-5 h-5 text-gold flex-shrink-0" />

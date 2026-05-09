@@ -12,16 +12,14 @@ export async function GET(req: NextRequest) {
     .from('shipping_rules')
     .select('*')
     .eq('is_active', true);
-
-  if (error) {
-    return NextResponse.json({ error: 'Nakliyat kuralları yüklenemedi.' }, { status: 500 });
-  }
-
-  const quote = getShippingQuote((data as ShippingRule[]) || [], city, district);
+  const rules = error ? [] : ((data as ShippingRule[]) || []);
+  const quote = getShippingQuote(rules, city, district);
 
   return NextResponse.json({
     price: quote.price,
     isFree: quote.isFree,
     matchedRule: quote.matchedRule,
+    note: quote.note,
+    rulesFallbackUsed: !!error,
   });
 }

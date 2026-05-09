@@ -1,15 +1,24 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, ProductVariant, CartItem } from '@/lib/types';
+import { Product, ProductVariant, CartItem, CartShippingSelection } from '@/lib/types';
 import { resolveProductPricing } from '@/lib/campaigns';
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: Product, variant?: ProductVariant | null, quantity?: number) => void;
+  addItem: (
+    product: Product,
+    variant?: ProductVariant | null,
+    quantity?: number,
+    shippingSelection?: CartShippingSelection | null,
+  ) => void;
   removeItem: (productId: string, variantId?: string | null) => void;
   updateQuantity: (productId: string, variantId: string | null, quantity: number) => void;
   clearCart: () => void;
+  shippingSelection: CartShippingSelection | null;
+  setShippingSelection: (selection: CartShippingSelection | null) => void;
+  shippingCost: number;
+  total: number;
   itemCount: number;
   subtotal: number;
   isOpen: boolean;
@@ -20,6 +29,11 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_KEY = 'final-mobilya-cart';
 
+type PersistedCartState = {
+  items: CartItem[];
+  shippingSelection: CartShippingSelection | null;
+};
+
 function getItemPrice(item: CartItem): number {
   const base = resolveProductPricing(item.product, item.product.active_campaign).finalPrice;
   const modifier = item.variant?.price_modifier ?? 0;
@@ -28,6 +42,7 @@ function getItemPrice(item: CartItem): number {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [shippingSelection, setShippingSelection] = useState<CartShippingSelection | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   // Load cart from localStorage
@@ -35,17 +50,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const saved = localStorage.getItem(CART_KEY);
       if (saved) {
-        setItems(JSON.parse(saved));
+        const parsed = JSON.parse(saved) as PersistedCartState | CartItem[];
+        if (Array.isArray(parsed)) {
+          setItems(parsed);
+          setShippingSelection(null);
+        } else {
+          setItems(parsed.items || []);
+          setShippingSelection(parsed.shippingSelection || null);
+        }
       }
     } catch {}
   }, []);
 
   // Save cart to localStorage
   useEffect(() => {
-    localStorage.setItem(CART_KEY, JSON.stringify(items));
-  }, [items]);
+    const payload: PersistedCartState = { items, shippingSelection };
+    localStorage.setItem(CART_KEY, JSON.stringify(payload));
+  }, [items, shippingSelection]);
 
-  const addItem = (product: Product, variant?: ProductVariant | null, quantity = 1) => {
+  const addItem = (
+    product: Product,
+    variant?: ProductVariant | null,
+    quantity = 1,
+    nextShippingSelection?: CartShippingSelection | null,
+  ) => {
     setItems((prev) => {
       const existingIndex = prev.findIndex(
         (item) => item.product.id === product.id && (item.variant?.id ?? null) === (variant?.id ?? null)
@@ -62,6 +90,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       return [...prev, { product, variant: variant ?? null, quantity }];
     });
+    if (nextShippingSelection) {
+      setShippingSelection(nextShippingSelection);
+    }
     setIsOpen(true);
   };
 
@@ -89,15 +120,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
+    setShippingSelection(null);
     localStorage.removeItem(CART_KEY);
   };
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = items.reduce((sum, item) => sum + getItemPrice(item) * item.quantity, 0);
+  const shippingCost = shippingSelection?.price ?? 0;
+  const total = subtotal + shippingCost;
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, removeItem, updateQuantity, clearCart, itemCount, subtotal, isOpen, setIsOpen }}
+      value={{
+        items,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clearCart,
+        shippingSelection,
+        setShippingSelection,
+        shippingCost,
+        total,
+        itemCount,
+        subtotal,
+        isOpen,
+        setIsOpen,
+      }}
     >
       {children}
     </CartContext.Provider>

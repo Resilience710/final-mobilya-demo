@@ -195,6 +195,13 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface CartShippingSelection {
+  city: string;
+  district: string;
+  price: number;
+  note: string | null;
+}
+
 // Checkout form
 export interface CheckoutFormData {
   shipping_name: string;

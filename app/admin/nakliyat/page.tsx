@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Loader2, MapPin, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ShippingRule } from '@/lib/types';
+import { turkeyProvinces } from '@/lib/turkey-locations';
 
 const emptyForm = {
   id: '',
@@ -27,11 +28,21 @@ export default function AdminNakliyatPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [loadFailed, setLoadFailed] = useState(false);
+  const cities = useMemo(() => turkeyProvinces.map((province) => province.name), []);
+  const districts = useMemo(
+    () => turkeyProvinces.find((province) => province.name === form.city)?.districts || [],
+    [form.city],
+  );
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from('shipping_rules').select('*').order('city').order('district');
+    const { data, error: loadError } = await supabase.from('shipping_rules').select('*').order('city').order('district');
     setRules((data as ShippingRule[]) || []);
+    setLoadFailed(!!loadError);
+    if (loadError) {
+      setError('Nakliyat kuralları okunamadı. Varsayılan şehir fiyatları çalışır; admin kayıtları için SQL kurulumu gerekebilir.');
+    }
     setLoading(false);
   };
 
@@ -41,6 +52,10 @@ export default function AdminNakliyatPage() {
 
   const resetForm = () => {
     setForm(emptyForm);
+    if (loadFailed) {
+      setError('Nakliyat kuralları okunamadı. Varsayılan şehir fiyatları çalışır; admin kayıtları için SQL kurulumu gerekebilir.');
+      return;
+    }
     setError('');
   };
 
@@ -118,10 +133,29 @@ export default function AdminNakliyatPage() {
 
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Field label="İl *">
-            <input value={form.city} onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))} className="input" placeholder="İstanbul" />
+            <select
+              value={form.city}
+              onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value, district: '' }))}
+              className="input"
+            >
+              <option value="">İl seçin</option>
+              {cities.map((city) => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
           </Field>
           <Field label="İlçe">
-            <input value={form.district} onChange={(e) => setForm((prev) => ({ ...prev, district: e.target.value }))} className="input" placeholder="Beylikdüzü" />
+            <select
+              value={form.district}
+              onChange={(e) => setForm((prev) => ({ ...prev, district: e.target.value }))}
+              disabled={!form.city}
+              className="input disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <option value="">{form.city ? 'Tüm il geneli' : 'Önce il seçin'}</option>
+              {districts.map((district) => (
+                <option key={district} value={district}>{district}</option>
+              ))}
+            </select>
           </Field>
           <Field label="Nakliyat Tutarı (₺)">
             <input type="number" min="0" value={form.price} onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))} className="input" />

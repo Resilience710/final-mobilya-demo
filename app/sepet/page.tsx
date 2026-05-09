@@ -13,11 +13,11 @@ import { useLang } from '@/lib/i18n';
 import { resolveProductPricing } from '@/lib/campaigns';
 
 export default function SepetPage() {
-  const { items, removeItem, updateQuantity, subtotal, clearCart } = useCart();
+  const { items, removeItem, updateQuantity, subtotal, clearCart, shippingSelection, shippingCost, total } = useCart();
   const [step, setStep] = useState<'cart' | 'checkout' | 'success'>('cart');
   const { t } = useLang();
 
-  const finalPrice = subtotal;
+  const finalPrice = total;
 
   if (step === 'success') {
     return (
@@ -76,7 +76,9 @@ export default function SepetPage() {
               <AnimatedSection className="bg-beige border border-stone p-4 mb-6 flex items-center gap-3">
                 <Truck className="w-4 h-4 text-gold flex-shrink-0" />
                 <p className="text-xs text-brown">
-                  Nakliyat ücreti artık teslimat il ve ilçe bilgisine göre ödeme adımında hesaplanır.
+                  {shippingSelection
+                    ? `Nakliyat seçimi: ${shippingSelection.city} / ${shippingSelection.district} ${shippingCost === 0 ? '(Ücretsiz)' : `(${formatPrice(shippingCost)})`}`
+                    : 'Nakliyat ücreti ürün detayında seçilen il ve ilçeye göre yansıtılır.'}
                 </p>
               </AnimatedSection>
 
@@ -164,8 +166,15 @@ export default function SepetPage() {
                   </div>
                   <div className="flex justify-between text-brown">
                     <span>{t.cart.shipping}</span>
-                    <span className="text-charcoal">Adrese göre hesaplanır</span>
+                    <span className="text-charcoal">
+                      {shippingSelection ? (shippingCost === 0 ? 'Ücretsiz' : formatPrice(shippingCost)) : 'Henüz seçilmedi'}
+                    </span>
                   </div>
+                  {shippingSelection ? (
+                    <div className="text-xs text-brown/60">
+                      {shippingSelection.city} / {shippingSelection.district}
+                    </div>
+                  ) : null}
                   <div className="flex justify-between font-semibold text-charcoal text-base pt-3 border-t border-stone">
                     <span>{t.cart.total}</span>
                     <span>{formatPrice(finalPrice)}</span>
