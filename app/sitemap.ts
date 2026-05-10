@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { absoluteUrl } from '@/lib/site';
+import { blogPosts } from '@/lib/blog';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createServerSupabaseClient();
@@ -17,7 +18,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/kategori',
     '/subelerimiz',
     '/bayilik',
+    '/blog',
     '/iletisim',
+    '/nakliyat',
     '/kargo-teslimat',
     '/iade-degisim',
     '/gizlilik-politikasi',
@@ -25,7 +28,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: absoluteUrl(path || '/'),
     lastModified: new Date(),
     changeFrequency: path === '' ? 'daily' : 'weekly',
-    priority: path === '' ? 1 : 0.7,
+      priority: path === '' ? 1 : 0.7,
+    }));
+
+  const blogRoutes: MetadataRoute.Sitemap = blogPosts.map((post) => ({
+    url: absoluteUrl(`/blog/${post.slug}`),
+    lastModified: new Date(post.publishedAt),
+    changeFrequency: 'monthly',
+    priority: 0.65,
   }));
 
   const productRoutes: MetadataRoute.Sitemap =
@@ -44,5 +54,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.75,
     })) ?? [];
 
-  return [...staticRoutes, ...categoryRoutes, ...productRoutes];
+  return [...staticRoutes, ...blogRoutes, ...categoryRoutes, ...productRoutes];
 }

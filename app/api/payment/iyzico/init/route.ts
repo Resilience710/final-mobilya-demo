@@ -15,6 +15,7 @@ interface OrderRow {
   shipping_phone: string;
   shipping_postal_code: string | null;
   payment_status: 'awaiting' | 'pending' | 'paid' | 'failed' | 'refunded';
+  payment_method: string | null;
   status: string;
   currency: string;
 }
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
     // RLS: user can only fetch their own order
     const { data: order, error: orderErr } = await supabase
       .from('orders')
-      .select('id, user_id, total_price, subtotal, shipping_cost, shipping_name, shipping_address, shipping_city, shipping_phone, shipping_postal_code, payment_status, status, currency')
+      .select('id, user_id, total_price, subtotal, shipping_cost, shipping_name, shipping_address, shipping_city, shipping_phone, shipping_postal_code, payment_status, payment_method, status, currency')
       .eq('id', orderId)
       .single<OrderRow>();
 
@@ -75,8 +76,11 @@ export async function POST(req: NextRequest) {
     if (order.payment_status === 'paid') {
       return NextResponse.json({ error: 'Bu sipariş zaten ödenmiş.' }, { status: 409 });
     }
-    if (!['awaiting', 'pending', 'failed'].includes(order.payment_status)) {
+    if (!['awaiting', 'failed'].includes(order.payment_status)) {
       return NextResponse.json({ error: 'Sipariş bu aşamada ödeme alamaz.' }, { status: 409 });
+    }
+    if (order.payment_status === 'awaiting' && order.payment_method) {
+      return NextResponse.json({ error: 'Bu sipariş için ödeme yöntemi zaten seçildi.' }, { status: 409 });
     }
     if (order.status === 'cancelled' || order.status === 'refunded') {
       return NextResponse.json({ error: 'Sipariş iptal edilmiş.' }, { status: 409 });

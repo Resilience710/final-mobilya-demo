@@ -8,7 +8,7 @@ import {
   pickActiveCampaign,
   resolveProductPricing,
 } from '@/lib/campaigns';
-import { absoluteUrl, cleanText, SITE_NAME } from '@/lib/site';
+import { absoluteUrl, buildBreadcrumbSchema, buildMetadata, cleanText, SITE_NAME } from '@/lib/site';
 
 export async function generateMetadata({
   searchParams,
@@ -18,8 +18,11 @@ export async function generateMetadata({
   const supabase = createServerSupabaseClient();
   let title = 'Ürünler';
   let description = 'Final Mobilya ürünleri, koltuk takımları, yatak odası, yemek odası ve dekorasyon koleksiyonlarını keşfedin.';
-  let canonical = absoluteUrl('/urunler');
-  let openGraphTitle = `${title} | ${SITE_NAME}`;
+  let canonicalPath = '/urunler';
+  let canonical = absoluteUrl(canonicalPath);
+  const hasQueryVariants = Boolean(
+    searchParams.kategori || searchParams.siralama || searchParams.arama || searchParams.indirim || searchParams['one-cikan']
+  );
 
   if (searchParams.kategori) {
     const { data: category } = await supabase
@@ -31,41 +34,35 @@ export async function generateMetadata({
     if (category) {
       title = `${category.name} Koleksiyonu`;
       description = cleanText(category.description, `${category.name} ürünleri ve kampanyaları.`);
-      canonical = absoluteUrl(`/kategori/${category.slug}`);
-      openGraphTitle = `${title} | ${SITE_NAME}`;
+      canonicalPath = `/kategori/${category.slug}`;
+      canonical = absoluteUrl(canonicalPath);
     }
   }
 
   if (searchParams.arama) {
     title = `"${searchParams.arama}" Arama Sonuçları`;
     description = `${searchParams.arama} için ${SITE_NAME} ürün arama sonuçları.`;
-    openGraphTitle = `${title} | ${SITE_NAME}`;
+    canonicalPath = '/urunler';
+    canonical = absoluteUrl(canonicalPath);
   }
 
   if (searchParams.indirim === '1') {
     title = 'İndirimli Ürünler';
     description = `${SITE_NAME} kampanyalı ve indirimli ürünlerini keşfedin.`;
-    openGraphTitle = `${title} | ${SITE_NAME}`;
   }
 
   if (searchParams['one-cikan'] === '1') {
     title = 'En Çok Satanlar';
     description = `${SITE_NAME} öne çıkan ve en çok tercih edilen ürünlerini inceleyin.`;
-    openGraphTitle = `${title} | ${SITE_NAME}`;
   }
 
-  return {
+  return buildMetadata({
     title,
     description,
-    alternates: {
-      canonical,
-    },
-    openGraph: {
-      title: openGraphTitle,
-      description,
-      url: canonical,
-    },
-  };
+    path: canonicalPath,
+    canonical,
+    noIndex: hasQueryVariants,
+  });
 }
 
 export default async function ProductsPage({
@@ -150,19 +147,61 @@ export default async function ProductsPage({
       break;
   }
 
+  const activeCategory = ((categories as Category[]) || []).find((category) => category.slug === searchParams.kategori) || null;
+  const listingTitle =
+    searchParams.arama
+      ? `"${searchParams.arama}" Arama Sonuçları`
+      : searchParams.indirim === '1'
+        ? 'İndirimli Ürünler'
+        : searchParams['one-cikan'] === '1'
+          ? 'En Çok Satanlar'
+          : activeCategory
+            ? `${activeCategory.name} Koleksiyonu`
+            : 'Final Mobilya Ürünler';
+  const canonicalPath =
+    activeCategory && !searchParams.arama && !searchParams.siralama && searchParams.indirim !== '1' && searchParams['one-cikan'] !== '1'
+      ? `/kategori/${activeCategory.slug}`
+      : '/urunler';
+  const listingDescription =
+    searchParams.arama
+      ? `${searchParams.arama} için ${SITE_NAME} ürün arama sonuçları.`
+      : activeCategory
+        ? cleanText(activeCategory.description, `${activeCategory.name} ürünleri ve kampanyaları.`)
+        : 'Final Mobilya ürünleri, koltuk takımları, yatak odası, yemek odası ve dekorasyon koleksiyonlarını keşfedin.';
+  const productsSchema = [
+    buildBreadcrumbSchema([
+      { name: 'Ana Sayfa', path: '/' },
+      { name: 'Ürünler', path: '/urunler' },
+    ]),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: listingTitle,
+      description: listingDescription,
+      url: absoluteUrl(canonicalPath),
+      numberOfItems: resolvedProducts.length,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      itemListOrder: 'https://schema.org/ItemListOrderAscending',
+      numberOfItems: resolvedProducts.length,
+      itemListElement: resolvedProducts.slice(0, 12).map((product, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: absoluteUrl(`/urun/${product.slug}`),
+        name: product.name,
+      })),
+    },
+  ];
+
   return (
     <>
       <script
         type="application/ld+json"
         suppressHydrationWarning
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'CollectionPage',
-            name: 'Final Mobilya Ürünler',
-            url: absoluteUrl('/urunler'),
-            numberOfItems: resolvedProducts.length,
-          }),
+          __html: JSON.stringify(productsSchema),
         }}
       />
       <ProductsClient

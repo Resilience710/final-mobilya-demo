@@ -27,6 +27,12 @@ const paymentStatusConfig: Record<string, { label: string; color: string }> = {
   refunded: { label: 'İade Edildi', color: 'text-gray-700 bg-gray-100' },
 };
 
+const paymentMethodLabels: Record<string, string> = {
+  iyzico: 'iyzico',
+  paytr: 'PayTR',
+  bank_transfer: 'Banka Havalesi',
+};
+
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
 }
@@ -151,7 +157,7 @@ export default function MyOrdersPage() {
                           <p className="text-brown/40 text-xs mb-1 mt-2">Ödeme</p>
                           <p className="text-charcoal text-xs">
                             {paymentStatusConfig[order.payment_status]?.label || order.payment_status}
-                            {order.payment_method ? ` · ${order.payment_method}` : ''}
+                            {order.payment_method ? ` · ${paymentMethodLabels[order.payment_method] || order.payment_method}` : ''}
                           </p>
                           {order.tracking_number && (
                             <>

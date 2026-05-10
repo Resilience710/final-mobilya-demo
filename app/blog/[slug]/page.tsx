@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { blogPosts, getBlogPostBySlug, getRelatedBlogPosts } from '@/lib/blog';
-import { absoluteUrl, SITE_NAME } from '@/lib/site';
+import { absoluteUrl, buildBreadcrumbSchema, buildMetadata, SITE_NAME } from '@/lib/site';
 
 interface Props {
   params: { slug: string };
@@ -21,19 +21,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {};
   }
 
-  return {
+  return buildMetadata({
     title: post.title,
     description: post.excerpt,
-    alternates: {
-      canonical: `/blog/${post.slug}`,
-    },
-    openGraph: {
-      title: `${post.title} | ${SITE_NAME}`,
-      description: post.excerpt,
-      url: absoluteUrl(`/blog/${post.slug}`),
-      images: [{ url: post.coverImage, alt: post.title }],
-    },
-  };
+    path: `/blog/${post.slug}`,
+    image: post.coverImage,
+    imageAlt: post.title,
+    type: 'article',
+    keywords: [post.category, post.title, SITE_NAME],
+  });
 }
 
 export default function BlogDetailPage({ params }: Props) {
@@ -44,9 +40,46 @@ export default function BlogDetailPage({ params }: Props) {
   }
 
   const relatedPosts = getRelatedBlogPosts(post.slug, 2);
+  const articleSchemas = [
+    buildBreadcrumbSchema([
+      { name: 'Ana Sayfa', path: '/' },
+      { name: 'Blog', path: '/blog' },
+      { name: post.title, path: `/blog/${post.slug}` },
+    ]),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: post.title,
+      description: post.excerpt,
+      datePublished: post.publishedAt,
+      dateModified: post.publishedAt,
+      image: [post.coverImage],
+      articleSection: post.category,
+      author: {
+        '@type': 'Organization',
+        name: SITE_NAME,
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: SITE_NAME,
+        logo: {
+          '@type': 'ImageObject',
+          url: absoluteUrl('/opengraph-image'),
+        },
+      },
+      mainEntityOfPage: absoluteUrl(`/blog/${post.slug}`),
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-white pt-24 pb-20">
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(articleSchemas),
+        }}
+      />
       <article className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link
           href="/blog"

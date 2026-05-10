@@ -4,14 +4,14 @@ import CategoryClientPage from './CategoryClientPage';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { Product, Category, Campaign, ProductDiscount } from '@/lib/types';
 import { applyCampaignToProducts, applyProductDiscountsToProducts, pickActiveCampaign } from '@/lib/campaigns';
-import { absoluteUrl, cleanText, SITE_NAME } from '@/lib/site';
+import { absoluteUrl, buildBreadcrumbSchema, buildMetadata, cleanText } from '@/lib/site';
 
 interface Props {
   params: { slug: string };
   searchParams: { sort?: string; color?: string };
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const supabase = createServerSupabaseClient();
   const { data: cat } = await supabase
     .from('categories')
@@ -22,20 +22,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!cat) return {};
   const title = cat.name;
   const description = cleanText(cat.description, `${cat.name} koleksiyonunu keşfedin.`);
+  const hasFacetedNavigation = Boolean(searchParams.sort || searchParams.color);
 
-  return {
+  return buildMetadata({
     title,
     description,
-    alternates: {
-      canonical: `/kategori/${cat.slug}`,
-    },
-    openGraph: {
-      title: `${title} | ${SITE_NAME}`,
-      description,
-      url: absoluteUrl(`/kategori/${cat.slug}`),
-      images: cat.image_url ? [{ url: cat.image_url, alt: cat.name }] : undefined,
-    },
-  };
+    path: `/kategori/${cat.slug}`,
+    image: cat.image_url || undefined,
+    imageAlt: cat.name,
+    noIndex: hasFacetedNavigation,
+  });
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {
@@ -73,6 +69,32 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     applyCampaignToProducts(productList, activeCampaign),
     (productDiscountRows as ProductDiscount[]) || [],
   );
+  const categorySchemas = [
+    buildBreadcrumbSchema([
+      { name: 'Ana Sayfa', path: '/' },
+      { name: 'Kategoriler', path: '/kategori' },
+      { name: (cat as Category).name, path: `/kategori/${(cat as Category).slug}` },
+    ]),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: (cat as Category).name,
+      description: cleanText((cat as Category).description, `${(cat as Category).name} koleksiyonunu inceleyin.`),
+      url: absoluteUrl(`/kategori/${(cat as Category).slug}`),
+      numberOfItems: resolvedProducts.length,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      numberOfItems: resolvedProducts.length,
+      itemListElement: resolvedProducts.slice(0, 12).map((product, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: absoluteUrl(`/urun/${product.slug}`),
+        name: product.name,
+      })),
+    },
+  ];
 
   return (
     <>
@@ -80,14 +102,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         type="application/ld+json"
         suppressHydrationWarning
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'CollectionPage',
-            name: (cat as Category).name,
-            description: cleanText((cat as Category).description, ''),
-            url: absoluteUrl(`/kategori/${(cat as Category).slug}`),
-            numberOfItems: resolvedProducts.length,
-          }),
+          __html: JSON.stringify(categorySchemas),
         }}
       />
       <CategoryClientPage category={cat as Category} products={resolvedProducts} />

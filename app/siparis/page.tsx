@@ -12,6 +12,8 @@ import { CheckoutFormData } from '@/lib/types';
 import { resolveProductPricing } from '@/lib/campaigns';
 import { turkeyProvinces } from '@/lib/turkey-locations';
 
+type PaymentProvider = 'iyzico' | 'paytr' | 'bank_transfer';
+
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
 }
@@ -25,6 +27,7 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [checkoutMode, setCheckoutMode] = useState<'payment' | 'demo'>('payment');
+  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>('iyzico');
   const [shippingCost, setShippingCost] = useState(shippingSelection?.price ?? 499);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingNote, setShippingNote] = useState(
@@ -154,8 +157,15 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Sipariş oluşturulamadı.');
 
-      // Sipariş DB'de oluştu. Şimdi iyzico'yu başlat.
-      const payRes = await fetch('/api/payment/iyzico/init', {
+      const initPath =
+        paymentProvider === 'paytr'
+          ? '/api/payment/paytr/init'
+          : paymentProvider === 'bank_transfer'
+            ? '/api/payment/bank-transfer/init'
+            : '/api/payment/iyzico/init';
+
+      // Sipariş DB'de oluştu. Şimdi seçilen ödeme sağlayıcısını başlat.
+      const payRes = await fetch(initPath, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -179,7 +189,7 @@ export default function CheckoutPage() {
         throw new Error(payData.error || 'Ödeme sayfası açılamadı.');
       }
 
-      // iyzico checkout sayfasına yönlendir — cart başarı sayfasında temizlenecek
+      // Hosted ödeme sayfasına yönlendir — cart başarı sayfasında temizlenecek
       window.location.href = payData.paymentPageUrl;
     } catch (err: any) {
       setError(err.message || 'Sipariş oluşturulurken bir hata oluştu.');
@@ -305,12 +315,14 @@ export default function CheckoutPage() {
                         className="w-full pl-10 pr-4 py-3 bg-cream/50 border border-stone/30 rounded-xl text-charcoal placeholder:text-brown/30 focus:outline-none focus:ring-2 focus:ring-gold/40 text-sm" placeholder="0 5XX XXX XX XX" />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-charcoal mb-1.5">TC Kimlik No</label>
-                    <input type="text" value={form.buyer_identity_number || ''} onChange={(e) => updateField('buyer_identity_number', e.target.value.replace(/\D/g, '').slice(0, 11))}
-                      className="w-full px-4 py-3 bg-cream/50 border border-stone/30 rounded-xl text-charcoal placeholder:text-brown/30 focus:outline-none focus:ring-2 focus:ring-gold/40 text-sm"
-                      placeholder="11 haneli kimlik numarası" />
-                  </div>
+                  {paymentProvider === 'iyzico' && (
+                    <div>
+                      <label className="block text-sm font-medium text-charcoal mb-1.5">TC Kimlik No</label>
+                      <input type="text" value={form.buyer_identity_number || ''} onChange={(e) => updateField('buyer_identity_number', e.target.value.replace(/\D/g, '').slice(0, 11))}
+                        className="w-full px-4 py-3 bg-cream/50 border border-stone/30 rounded-xl text-charcoal placeholder:text-brown/30 focus:outline-none focus:ring-2 focus:ring-gold/40 text-sm"
+                        placeholder="11 haneli kimlik numarası" />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -324,23 +336,92 @@ export default function CheckoutPage() {
                   placeholder="Varsa sipariş ile ilgili notunuz..." />
               </div>
 
+              <div className="bg-white rounded-2xl border border-stone/20 p-6 mb-6">
+                <h2 className="font-serif text-xl text-charcoal mb-4">Ödeme Yöntemi</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentProvider('iyzico')}
+                    className={`rounded-2xl border p-5 text-left transition-all ${
+                      paymentProvider === 'iyzico'
+                        ? 'border-gold bg-gold/10 shadow-card'
+                        : 'border-stone/30 bg-cream/40 hover:border-gold/50'
+                    }`}
+                  >
+                    <p className="text-xs uppercase tracking-[0.28em] text-brown/45 mb-2">Hosted Checkout</p>
+                    <p className="font-serif text-xl text-charcoal mb-2">iyzico</p>
+                    <p className="text-sm text-brown/70">
+                      Kart verisi iyzico sayfasında alınır. 11 haneli TC kimlik numarası gerekir.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentProvider('paytr')}
+                    className={`rounded-2xl border p-5 text-left transition-all ${
+                      paymentProvider === 'paytr'
+                        ? 'border-gold bg-gold/10 shadow-card'
+                        : 'border-stone/30 bg-cream/40 hover:border-gold/50'
+                    }`}
+                  >
+                    <p className="text-xs uppercase tracking-[0.28em] text-brown/45 mb-2">Hosted iFrame</p>
+                    <p className="font-serif text-xl text-charcoal mb-2">PayTR</p>
+                    <p className="text-sm text-brown/70">
+                      Ödeme formu PayTR altyapısıyla güvenli iframe içinde açılır. Kart verisi sunucumuza uğramaz.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentProvider('bank_transfer')}
+                    className={`rounded-2xl border p-5 text-left transition-all sm:col-span-2 ${
+                      paymentProvider === 'bank_transfer'
+                        ? 'border-gold bg-gold/10 shadow-card'
+                        : 'border-stone/30 bg-cream/40 hover:border-gold/50'
+                    }`}
+                  >
+                    <p className="text-xs uppercase tracking-[0.28em] text-brown/45 mb-2">Manuel Ödeme</p>
+                    <p className="font-serif text-xl text-charcoal mb-2">Banka Havalesi / EFT</p>
+                    <p className="text-sm text-brown/70">
+                      Sipariş oluşturulur, hesap bilgileri gösterilir ve ödemeniz admin onayından sonra işleme alınır.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
               {/* Payment Notice */}
               <div className="bg-gold/5 border border-gold/20 rounded-2xl p-6 mb-6">
                 <h3 className="text-sm font-medium text-charcoal mb-2">🔒 Güvenli Ödeme</h3>
                 <p className="text-sm text-brown/70">
-                  Ödemeniz iyzico'nun PCI-DSS sertifikalı güvenli sayfasında alınır. Kart bilgileriniz sitemize asla iletilmez.
+                  Ödemeniz seçtiğiniz sağlayıcının PCI uyumlu hosted ödeme ekranında alınır. Kart bilgileriniz sitemize asla iletilmez.
                 </p>
+                {paymentProvider === 'iyzico' && (
+                  <p className="text-xs text-brown/50 mt-2">
+                    iyzico entegrasyonunda ödeme başlatma için 11 haneli TC kimlik numarası gerekir. Bu alan sadece iyzico isteğinde kullanılır.
+                  </p>
+                )}
+                {paymentProvider === 'paytr' && (
+                  <p className="text-xs text-brown/50 mt-2">
+                    PayTR akışında kullanıcı ödeme sonrası önce bekleme ekranına döner; kesin başarı bilgisi sunucu callback doğrulamasından sonra siparişe işlenir.
+                  </p>
+                )}
+                {paymentProvider === 'bank_transfer' && (
+                  <p className="text-xs text-brown/50 mt-2">
+                    Havale/EFT seçildiğinde sipariş hemen oluşturulur ve banka talimat sayfası açılır. Ödeme doğrulaması admin kontrolü ile tamamlanır.
+                  </p>
+                )}
                 <p className="text-xs text-brown/50 mt-2">
-                  iyzico entegrasyonunda ödeme başlatma için 11 haneli TC kimlik numarası gerekir. Bu alan sadece iyzico isteğinde kullanılır.
-                </p>
-                <p className="text-xs text-brown/50 mt-2">
-                  Demo ortamında iyzico anahtarları tanımlı değilse sipariş kaydı demo olarak oluşturulur ve ödeme adımı atlanır.
+                  Demo ortamında sağlayıcı anahtarları tanımlı değilse sipariş kaydı demo olarak oluşturulur ve ödeme adımı atlanır.
                 </p>
               </div>
 
               <button type="submit" disabled={loading || !hasShippingSelection || shippingLoading}
                 className="w-full flex items-center justify-center gap-2 py-4 bg-charcoal text-white font-medium rounded-xl hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-300 text-base">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Ödemeye Geç <CheckCircle className="w-5 h-5" /></>}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>
+                  {paymentProvider === 'paytr'
+                    ? 'PayTR ile Devam Et'
+                    : paymentProvider === 'bank_transfer'
+                      ? 'Havale Talimatına Geç'
+                      : 'iyzico ile Devam Et'} <CheckCircle className="w-5 h-5" />
+                </>}
               </button>
             </form>
           </div>

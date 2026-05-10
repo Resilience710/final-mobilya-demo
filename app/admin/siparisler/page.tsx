@@ -23,6 +23,12 @@ const paymentStatusOptions: Record<string, { label: string; color: string }> = {
   refunded: { label: 'İade Edildi', color: 'text-gray-700 bg-gray-100' },
 };
 
+const paymentMethodLabels: Record<string, string> = {
+  iyzico: 'iyzico',
+  paytr: 'PayTR',
+  bank_transfer: 'Banka Havalesi',
+};
+
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
 }
@@ -34,6 +40,7 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState('');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [updatingPayment, setUpdatingPayment] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const supabase = createClient();
 
@@ -75,6 +82,30 @@ export default function AdminOrdersPage() {
 
     await fetchOrders();
     setUpdatingStatus(null);
+  };
+
+  const updatePaymentStatus = async (orderId: string, paymentStatus: 'paid' | 'failed') => {
+    setUpdatingPayment(`${orderId}:${paymentStatus}`);
+    setStatusError(null);
+
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/payment-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_status: paymentStatus }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Ödeme durumu güncellenemedi.');
+      }
+    } catch (error: any) {
+      setStatusError(error.message || 'Ödeme durumu güncellenemedi.');
+      console.error('[AdminOrders] Payment status update failed:', error);
+    }
+
+    await fetchOrders();
+    setUpdatingPayment(null);
   };
 
   const filteredOrders = orders.filter(o => {
@@ -228,8 +259,31 @@ export default function AdminOrdersPage() {
                           Durum: {paymentStatusOptions[order.payment_status]?.label || order.payment_status}
                         </p>
                         <p className="text-blue-900">
-                          Yöntem: {order.payment_method || 'Henüz atanmadı'}
+                          Yöntem: {order.payment_method ? paymentMethodLabels[order.payment_method] || order.payment_method : 'Henüz atanmadı'}
                         </p>
+                        {order.payment_reference && (
+                          <p className="text-blue-900 break-all">
+                            Referans: {order.payment_reference}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => updatePaymentStatus(order.id, 'paid')}
+                            disabled={updatingPayment !== null || order.payment_status === 'paid' || order.payment_status === 'refunded'}
+                            className="inline-flex items-center justify-center rounded-full bg-green-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {updatingPayment === `${order.id}:paid` ? 'Kaydediliyor...' : 'Ödeme Alındı'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updatePaymentStatus(order.id, 'failed')}
+                            disabled={updatingPayment !== null || order.payment_status === 'failed' || order.payment_status === 'refunded'}
+                            className="inline-flex items-center justify-center rounded-full bg-red-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {updatingPayment === `${order.id}:failed` ? 'Kaydediliyor...' : 'Ödeme Reddedildi'}
+                          </button>
+                        </div>
                       </div>
 
                       {order.customer_note && (

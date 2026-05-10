@@ -6,7 +6,18 @@ import Footer from '@/components/layout/Footer';
 import CartDrawer from '@/components/layout/CartDrawer';
 import SupportWidget from '@/components/layout/SupportWidget';
 import Providers from './Providers';
-import { absoluteUrl, getSiteUrl, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME } from '@/lib/site';
+import {
+  absoluteUrl,
+  buildOrganizationSchema,
+  buildWebsiteSchema,
+  DEFAULT_OG_IMAGE_PATH,
+  getSiteUrl,
+  SITE_DEFAULT_TITLE,
+  SITE_DESCRIPTION,
+  SITE_KEYWORDS,
+  SITE_LOCALE,
+  SITE_NAME,
+} from '@/lib/site';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -30,7 +41,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: `${SITE_NAME} | Premium Mobilya ve Yaşam Alanı Tasarımı`,
+    default: `${SITE_NAME} | ${SITE_DEFAULT_TITLE}`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -40,6 +51,9 @@ export const metadata: Metadata = {
   creator: SITE_NAME,
   publisher: SITE_NAME,
   category: 'shopping',
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+  },
   alternates: {
     canonical: '/',
   },
@@ -55,15 +69,15 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: `${SITE_NAME} | Premium Mobilya ve Yaşam Alanı Tasarımı`,
+    title: `${SITE_NAME} | ${SITE_DEFAULT_TITLE}`,
     description: SITE_DESCRIPTION,
     type: 'website',
-    locale: 'tr_TR',
+    locale: SITE_LOCALE,
     url: getSiteUrl(),
     siteName: SITE_NAME,
     images: [
       {
-        url: absoluteUrl('/opengraph-image'),
+        url: absoluteUrl(DEFAULT_OG_IMAGE_PATH),
         width: 1200,
         height: 630,
         alt: `${SITE_NAME} premium mobilya koleksiyonu`,
@@ -72,9 +86,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} | Premium Mobilya ve Yaşam Alanı Tasarımı`,
+    title: `${SITE_NAME} | ${SITE_DEFAULT_TITLE}`,
     description: SITE_DESCRIPTION,
-    images: [absoluteUrl('/opengraph-image')],
+    images: [absoluteUrl(DEFAULT_OG_IMAGE_PATH)],
   },
 };
 
@@ -87,31 +101,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             type="application/ld+json"
             suppressHydrationWarning
             dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                '@context': 'https://schema.org',
-                '@type': 'Organization',
-                name: SITE_NAME,
-                url: getSiteUrl(),
-                logo: absoluteUrl('/opengraph-image'),
-                sameAs: ['https://instagram.com/finalmobilya'],
-              }),
+              __html: JSON.stringify(buildOrganizationSchema()),
             }}
           />
           <script
             type="application/ld+json"
             suppressHydrationWarning
             dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                '@context': 'https://schema.org',
-                '@type': 'WebSite',
-                name: SITE_NAME,
-                url: getSiteUrl(),
-                potentialAction: {
-                  '@type': 'SearchAction',
-                  target: `${absoluteUrl('/urunler')}?arama={search_term_string}`,
-                  'query-input': 'required name=search_term_string',
-                },
-              }),
+              __html: JSON.stringify(buildWebsiteSchema()),
             }}
           />
           <Header />

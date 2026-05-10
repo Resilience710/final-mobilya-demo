@@ -102,6 +102,19 @@ export interface ShippingRule {
   updated_at?: string;
 }
 
+export interface Store {
+  id: string;
+  name: string;
+  city: string;
+  address: string;
+  phone: string;
+  map_url: string | null;
+  is_active?: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface HomepageGalleryItem {
   id: string;
   slot_index: number;

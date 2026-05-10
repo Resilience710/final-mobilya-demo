@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceSupabaseClient } from '@/lib/supabase/service';
 import { retrieveCheckoutForm, isIyzicoConfigured, moneyStr, verifyCheckoutRetrieveSignature } from '@/lib/iyzico';
+import { createPaymentResultProof } from '@/lib/payment-result-proof';
 
 /**
  * iyzico checkout form callback.
@@ -19,7 +20,8 @@ const FAIL = (reason: string) => {
 
 const SUCCESS = (orderId: string) => {
   const base = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || '';
-  return NextResponse.redirect(`${base}/siparis/onay?status=success&order=${encodeURIComponent(orderId)}`, 303);
+  const proof = createPaymentResultProof({ orderId, status: 'success', provider: 'iyzico' });
+  return NextResponse.redirect(`${base}/siparis/onay?status=success&provider=iyzico&order=${encodeURIComponent(orderId)}&proof=${encodeURIComponent(proof)}`, 303);
 };
 
 async function handle(req: NextRequest) {
@@ -69,7 +71,7 @@ async function handle(req: NextRequest) {
 
   const { data: order, error } = await supabase
     .from('orders')
-    .select('id, user_id, total_price, payment_status, payment_reference')
+    .select('id, user_id, total_price, payment_status, payment_reference, payment_method')
     .eq('id', orderId)
     .single();
 
@@ -77,6 +79,11 @@ async function handle(req: NextRequest) {
 
   // Idempotency: zaten ödenmişse yine başarıyla yönlendir
   if (order.payment_status === 'paid') return SUCCESS(orderId);
+
+  if (order.payment_method && order.payment_method !== 'iyzico') {
+    console.error('[iyzico/callback] provider mismatch', { orderId, paymentMethod: order.payment_method });
+    return FAIL('token-mismatch');
+  }
 
   // Tutar doğrulama (tampering koruması)
   if (moneyStr(Number(result.paidPrice ?? 0)) !== moneyStr(Number(order.total_price))) {

@@ -3,24 +3,44 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { blogPosts } from '@/lib/blog';
-import { absoluteUrl, SITE_NAME } from '@/lib/site';
+import { absoluteUrl, buildBreadcrumbSchema, buildMetadata } from '@/lib/site';
 
-export const metadata: Metadata = {
-  title: 'Blog',
-  description: 'Final Mobilya Blog ile dekorasyon, yerleşim ve mobilya seçimi hakkında pratik fikirleri keşfedin.',
-  alternates: {
-    canonical: '/blog',
-  },
-  openGraph: {
-    title: `Blog | ${SITE_NAME}`,
-    description: 'Final Mobilya Blog ile dekorasyon, yerleşim ve mobilya seçimi hakkında pratik fikirleri keşfedin.',
-    url: absoluteUrl('/blog'),
-  },
-};
+export const metadata: Metadata = buildMetadata({
+  title: 'Mobilya ve Dekorasyon Blogu',
+  description: 'Final Mobilya Blog ile dekorasyon, salon yerleşimi, yatak odası planlama ve mobilya seçimi hakkında pratik fikirleri keşfedin.',
+  path: '/blog',
+});
 
 export default function BlogPage() {
+  const blogSchemas = [
+    buildBreadcrumbSchema([
+      { name: 'Ana Sayfa', path: '/' },
+      { name: 'Blog', path: '/blog' },
+    ]),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Blog',
+      name: 'Final Mobilya Blog',
+      description: 'Dekorasyon, yerleşim ve mobilya seçimi hakkında içerikler.',
+      url: absoluteUrl('/blog'),
+      blogPost: blogPosts.map((post) => ({
+        '@type': 'BlogPosting',
+        headline: post.title,
+        url: absoluteUrl(`/blog/${post.slug}`),
+        datePublished: post.publishedAt,
+      })),
+    },
+  ];
+
   return (
     <main className="min-h-screen bg-cream pt-24 pb-20">
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(blogSchemas),
+        }}
+      />
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm font-semibold tracking-[0.28em] uppercase text-[#1f5aa8]/75 mb-4">

@@ -2,20 +2,13 @@ import type { Metadata } from 'next';
 import KategoriContent from './KategoriContent';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { Category } from '@/lib/types';
-import { absoluteUrl, SITE_NAME } from '@/lib/site';
+import { absoluteUrl, buildBreadcrumbSchema, buildMetadata } from '@/lib/site';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: 'Tüm Kategoriler',
   description: 'Oturma odası, yatak odası, yemek odası ve daha fazlası için premium mobilya koleksiyonları.',
-  alternates: {
-    canonical: '/kategori',
-  },
-  openGraph: {
-    title: `Tüm Kategoriler | ${SITE_NAME}`,
-    description: 'Oturma odası, yatak odası, yemek odası ve daha fazlası için premium mobilya koleksiyonları.',
-    url: absoluteUrl('/kategori'),
-  },
-};
+  path: '/kategori',
+});
 
 export default async function KategoriPage() {
   const supabase = createServerSupabaseClient();
@@ -42,6 +35,30 @@ export default async function KategoriPage() {
     ...category,
     product_count: counts.get(category.id) || 0,
   }));
+  const categorySchemas = [
+    buildBreadcrumbSchema([
+      { name: 'Ana Sayfa', path: '/' },
+      { name: 'Kategoriler', path: '/kategori' },
+    ]),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'Final Mobilya Kategorileri',
+      url: absoluteUrl('/kategori'),
+      numberOfItems: categoryList.length,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      numberOfItems: categoryList.length,
+      itemListElement: categoryList.map((category, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: absoluteUrl(`/kategori/${category.slug}`),
+        name: category.name,
+      })),
+    },
+  ];
 
   return (
     <>
@@ -49,13 +66,7 @@ export default async function KategoriPage() {
         type="application/ld+json"
         suppressHydrationWarning
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'CollectionPage',
-            name: 'Final Mobilya Kategorileri',
-            url: absoluteUrl('/kategori'),
-            numberOfItems: categoryList.length,
-          }),
+          __html: JSON.stringify(categorySchemas),
         }}
       />
       <KategoriContent categories={categoryList} />

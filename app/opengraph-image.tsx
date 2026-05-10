@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { getSiteUrl } from '@/lib/site';
 
 export const runtime = 'edge';
 export const alt = 'Final Mobilya premium koleksiyonları';
@@ -9,6 +10,8 @@ export const size = {
 export const contentType = 'image/png';
 
 export default function OpenGraphImage() {
+  const siteHost = new URL(getSiteUrl()).host;
+
   return new ImageResponse(
     (
       <div
@@ -57,7 +60,7 @@ export default function OpenGraphImage() {
             opacity: 0.88,
           }}
         >
-          <div>final-mobilya-demo.vercel.app</div>
+          <div>{siteHost}</div>
           <div>Türkiye geneli teslimat</div>
         </div>
       </div>
