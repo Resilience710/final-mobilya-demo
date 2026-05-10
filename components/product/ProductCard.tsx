@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -8,6 +7,8 @@ import { ShoppingBag, Heart, ArrowUpRight } from 'lucide-react';
 import { Product } from '@/lib/types';
 import { useCart } from '@/lib/cart-context';
 import { resolveProductPricing } from '@/lib/campaigns';
+import { getProductSticker } from '@/lib/product-stickers';
+import DiscountCountdown from '@/components/ui/DiscountCountdown';
 
 interface Props {
   product: Product;
@@ -23,19 +24,8 @@ export default function ProductCard({ product, viewMode = 'grid', showDiscountCo
   const { addItem } = useCart();
   const pricing = resolveProductPricing(product, product.active_campaign);
   const campaignLabel = product.active_campaign?.badge_text || (pricing.appliedCampaign ? 'Sezon Fırsatı' : null);
-  const [now, setNow] = useState(Date.now());
-  const countdown = showDiscountCountdown && product.active_product_discount?.end_date
-    ? getCountdownLabel(product.active_product_discount.end_date, now)
-    : null;
-
-  useEffect(() => {
-    if (!showDiscountCountdown || !product.active_product_discount?.end_date) {
-      return;
-    }
-
-    const interval = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(interval);
-  }, [product.active_product_discount?.end_date, showDiscountCountdown]);
+  const sticker = getProductSticker(product.slug);
+  const shouldShowCountdown = !!product.active_product_discount?.end_date && (showDiscountCountdown || pricing.appliedTimedDiscount);
 
   if (viewMode === 'list') {
     return (
@@ -51,6 +41,13 @@ export default function ProductCard({ product, viewMode = 'grid', showDiscountCo
               sizes="(max-width: 768px) 100vw, 224px"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal/35 via-transparent to-transparent" />
+            {sticker ? (
+              <span className={`absolute left-4 top-4 z-10 inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white shadow-lg ${
+                sticker.kind === 'advantage' ? 'bg-[#2f8f62]' : 'bg-[#f08a24]'
+              }`}>
+                {sticker.label}
+              </span>
+            ) : null}
           </Link>
 
           <div className="flex flex-1 flex-col justify-between p-5 md:p-6">
@@ -85,10 +82,13 @@ export default function ProductCard({ product, viewMode = 'grid', showDiscountCo
                   {pricing.discountPercent > 0 ? <span>%{pricing.discountPercent} avantaj</span> : null}
                   {product.stock_quantity > 0 && product.stock_quantity <= 5 ? <span>Son {product.stock_quantity} adet</span> : null}
                 </div>
-                {countdown ? (
-                  <p className="mt-2 text-sm font-medium text-[#d25842]">
-                    İndirim bitimine: {countdown}
-                  </p>
+                {shouldShowCountdown && product.active_product_discount?.end_date ? (
+                  <div className="mt-3">
+                    <DiscountCountdown
+                      endDate={product.active_product_discount.end_date}
+                      note="İndirimli fiyat için süre devam ediyor."
+                    />
+                  </div>
                 ) : null}
               </div>
 
@@ -132,6 +132,13 @@ export default function ProductCard({ product, viewMode = 'grid', showDiscountCo
 
           <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
             <div className="flex flex-col gap-2">
+              {sticker ? (
+                <span className={`w-fit rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white shadow-lg ${
+                  sticker.kind === 'advantage' ? 'bg-[#2f8f62]' : 'bg-[#f08a24]'
+                }`}>
+                  {sticker.label}
+                </span>
+              ) : null}
               {pricing.discountPercent > 0 ? (
                 <span className="rounded-full bg-[#c94f3d] px-3 py-1 text-xs font-semibold text-white shadow-lg">
                   %{pricing.discountPercent}
@@ -193,10 +200,13 @@ export default function ProductCard({ product, viewMode = 'grid', showDiscountCo
                 {pricing.appliedCampaign ? <span>Kampanya uygulandı</span> : null}
                 {product.stock_quantity > 0 && product.stock_quantity <= 5 ? <span>Son {product.stock_quantity} adet</span> : null}
               </div>
-              {countdown ? (
-                <p className="mt-2 text-sm font-medium text-[#d25842]">
-                  İndirim bitimine: {countdown}
-                </p>
+              {shouldShowCountdown && product.active_product_discount?.end_date ? (
+                <div className="mt-3">
+                  <DiscountCountdown
+                    endDate={product.active_product_discount.end_date}
+                    note="İndirimli fiyat için süre devam ediyor."
+                  />
+                </div>
               ) : null}
             </div>
             <motion.div
@@ -212,19 +222,4 @@ export default function ProductCard({ product, viewMode = 'grid', showDiscountCo
       </Link>
     </div>
   );
-}
-
-function getCountdownLabel(endDate: string, now: number) {
-  const remaining = new Date(endDate).getTime() - now;
-
-  if (remaining <= 0) {
-    return 'Süre doldu';
-  }
-
-  const days = Math.floor(remaining / 86_400_000);
-  const hours = Math.floor((remaining % 86_400_000) / 3_600_000);
-  const minutes = Math.floor((remaining % 3_600_000) / 60_000);
-  const seconds = Math.floor((remaining % 60_000) / 1000);
-
-  return `${days}g ${hours}s ${minutes}dk ${seconds}sn`;
 }

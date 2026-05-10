@@ -1,23 +1,75 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Minus, Plus, X, Shield, Lock, ChevronRight, Truck } from 'lucide-react';
+import { Minus, Plus, X, Shield, Lock, ChevronRight, Truck, MapPin, Loader2 } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
 import { formatPrice } from '@/lib/data';
 import AnimatedSection from '@/components/ui/AnimatedSection';
 import { useLang } from '@/lib/i18n';
 import { resolveProductPricing } from '@/lib/campaigns';
+import { turkeyProvinces } from '@/lib/turkey-locations';
 
 export default function SepetPage() {
-  const { items, removeItem, updateQuantity, subtotal, clearCart, shippingSelection, shippingCost, total } = useCart();
+  const { items, removeItem, updateQuantity, subtotal, shippingSelection, setShippingSelection, shippingCost, total } = useCart();
   const [step, setStep] = useState<'cart' | 'checkout' | 'success'>('cart');
+  const [city, setCity] = useState(shippingSelection?.city || '');
+  const [district, setDistrict] = useState(shippingSelection?.district || '');
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingError, setShippingError] = useState('');
   const { t } = useLang();
+  const provinces = useMemo(() => turkeyProvinces.map((province) => province.name), []);
+  const districts = useMemo(
+    () => turkeyProvinces.find((province) => province.name === city)?.districts || [],
+    [city],
+  );
 
   const finalPrice = total;
+
+  useEffect(() => {
+    setCity(shippingSelection?.city || '');
+    setDistrict(shippingSelection?.district || '');
+  }, [shippingSelection?.city, shippingSelection?.district]);
+
+  useEffect(() => {
+    if (!city || !district) {
+      setShippingSelection(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const loadShipping = async () => {
+      try {
+        setShippingLoading(true);
+        setShippingError('');
+        const params = new URLSearchParams({ city, district });
+        const response = await fetch(`/api/shipping/quote?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Nakliyat hesaplanamadı.');
+        }
+        setShippingSelection({
+          city,
+          district,
+          price: Number(data.price) || 0,
+          note: data.matchedRule?.note || data.note || null,
+        });
+      } catch (error: any) {
+        if (error.name === 'AbortError') return;
+        setShippingError(error.message || 'Nakliyat hesaplanamadı.');
+      } finally {
+        setShippingLoading(false);
+      }
+    };
+
+    loadShipping();
+    return () => controller.abort();
+  }, [city, district, setShippingSelection]);
 
   if (step === 'success') {
     return (
@@ -78,8 +130,59 @@ export default function SepetPage() {
                 <p className="text-xs text-brown">
                   {shippingSelection
                     ? `Nakliyat seçimi: ${shippingSelection.city} / ${shippingSelection.district} ${shippingCost === 0 ? '(Ücretsiz)' : `(${formatPrice(shippingCost)})`}`
-                    : 'Nakliyat ücreti ürün detayında seçilen il ve ilçeye göre yansıtılır.'}
+                    : 'Siparişe devam etmeden önce nakliyat için il ve ilçe seçin.'}
                 </p>
+              </AnimatedSection>
+
+              <AnimatedSection className="mb-8 rounded-[24px] border border-stone/30 bg-white p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <MapPin className="w-4 h-4 text-gold" />
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-charcoal">Nakliyat Seçimi</h2>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-charcoal/55">İl</span>
+                    <select
+                      value={city}
+                      onChange={(event) => {
+                        setCity(event.target.value);
+                        setDistrict('');
+                        setShippingSelection(null);
+                      }}
+                      className="w-full rounded-xl border border-stone/30 bg-cream/50 px-4 py-3 text-sm text-charcoal focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/30"
+                    >
+                      <option value="">İl seçin</option>
+                      {provinces.map((province) => (
+                        <option key={province} value={province}>{province}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-charcoal/55">İlçe</span>
+                    <select
+                      value={district}
+                      onChange={(event) => setDistrict(event.target.value)}
+                      disabled={!city}
+                      className="w-full rounded-xl border border-stone/30 bg-cream/50 px-4 py-3 text-sm text-charcoal focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/30 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <option value="">{city ? 'İlçe seçin' : 'Önce il seçin'}</option>
+                      {districts.map((item) => (
+                        <option key={item} value={item}>{item}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="mt-4 rounded-2xl border border-stone/20 bg-cream px-4 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-brown/60">Nakliyat Tutarı</span>
+                    <span className="text-lg font-semibold text-charcoal">
+                      {shippingLoading ? 'Hesaplanıyor...' : shippingSelection ? (shippingCost === 0 ? 'Ücretsiz' : formatPrice(shippingCost)) : '---'}
+                    </span>
+                  </div>
+                  {shippingError ? (
+                    <p className="mt-2 text-sm font-medium text-red-500">{shippingError}</p>
+                  ) : null}
+                </div>
               </AnimatedSection>
 
               <ul className="divide-y divide-stone/40">
@@ -182,11 +285,17 @@ export default function SepetPage() {
                 </div>
 
                 <button
-                  onClick={() => setStep('checkout')}
-                  className="btn-primary w-full flex items-center justify-center gap-2"
+                  onClick={() => {
+                    if (!shippingSelection) {
+                      setShippingError('Siparişe devam etmek için lütfen il ve ilçe seçin.');
+                      return;
+                    }
+                    setStep('checkout');
+                  }}
+                  className="btn-primary w-full flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={!shippingSelection || shippingLoading}
                 >
-                  {t.cart.checkout}
-                  <ChevronRight className="w-4 h-4" />
+                  {shippingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>{t.cart.checkout}</span><ChevronRight className="w-4 h-4" /></>}
                 </button>
 
                 <div className="mt-5 flex items-center justify-center gap-2 text-xs text-sand">
@@ -219,7 +328,7 @@ export default function SepetPage() {
  * Users are now redirected to /siparis which uses the secure /api/orders
  * endpoint that calculates prices server-side from the database.
  */
-function CheckoutForm({ total, onSuccess, onBack }: { total: number; onSuccess: () => void; onBack: () => void }) {
+function CheckoutForm({ total: _total, onSuccess: _onSuccess, onBack: _onBack }: { total: number; onSuccess: () => void; onBack: () => void }) {
   const { t } = useLang();
   const router = useRouter();
 

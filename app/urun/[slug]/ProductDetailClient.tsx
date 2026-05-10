@@ -10,6 +10,8 @@ import { useCart } from '@/lib/cart-context';
 import ProductCard from '@/components/product/ProductCard';
 import { resolveProductPricing } from '@/lib/campaigns';
 import { turkeyProvinces } from '@/lib/turkey-locations';
+import { getProductSticker } from '@/lib/product-stickers';
+import DiscountCountdown from '@/components/ui/DiscountCountdown';
 
 interface Props {
   product: Product;
@@ -29,20 +31,22 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   const [city, setCity] = useState('');
   const [district, setDistrict] = useState('');
   const [shippingCost, setShippingCost] = useState<number | null>(null);
-  const [shippingNote, setShippingNote] = useState('İl ve ilçe seçmeden sepete eklenemez.');
+  const [shippingNote, setShippingNote] = useState('Ürünü isterseniz şimdi sepete ekleyebilir, nakliyatı sepette seçebilirsiniz.');
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingError, setShippingError] = useState('');
   const { addItem } = useCart();
 
   const pricing = resolveProductPricing(product, product.active_campaign);
+  const sticker = getProductSticker(product.slug);
   const variantModifier = selectedVariant?.price_modifier || 0;
   const totalPrice = pricing.finalPrice + variantModifier;
+  const compareAtPrice = pricing.compareAtPrice ? pricing.compareAtPrice + variantModifier : null;
   const provinces = useMemo(() => turkeyProvinces.map((province) => province.name), []);
   const districts = useMemo(
     () => turkeyProvinces.find((province) => province.name === city)?.districts || [],
     [city],
   );
-  const canAddToCart = product.stock_quantity > 0 && !!city && !!district && shippingCost !== null && !shippingLoading;
+  const canAddToCart = product.stock_quantity > 0;
 
   const images = product.images?.length > 0
     ? product.images
@@ -52,7 +56,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     if (!city || !district) {
       setShippingCost(null);
       setShippingError('');
-      setShippingNote('İl ve ilçe seçmeden sepete eklenemez.');
+      setShippingNote('Ürünü isterseniz şimdi sepete ekleyebilir, nakliyatı sepette seçebilirsiniz.');
       return;
     }
 
@@ -85,17 +89,20 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   }, [city, district]);
 
   const handleAddToCart = () => {
-    if (!canAddToCart || shippingCost === null) {
-      setShippingError('Sepete eklemeden önce il ve ilçe seçip nakliyat fiyatını hesaplayın.');
+    if (!canAddToCart) {
       return;
     }
 
-    addItem(product, selectedVariant, quantity, {
-      city,
-      district,
-      price: shippingCost,
-      note: shippingNote,
-    });
+    if (city && district && shippingCost !== null) {
+      addItem(product, selectedVariant, quantity, {
+        city,
+        district,
+        price: shippingCost,
+        note: shippingNote,
+      });
+    } else {
+      addItem(product, selectedVariant, quantity);
+    }
     setShippingError('');
   };
 
@@ -149,6 +156,13 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   %{pricing.discountPercent} İndirim
                 </span>
               )}
+              {sticker ? (
+                <span className={`absolute right-4 top-4 px-3 py-1.5 text-sm font-semibold uppercase tracking-[0.16em] text-white rounded-xl ${
+                  sticker.kind === 'advantage' ? 'bg-[#2f8f62]' : 'bg-[#f08a24]'
+                }`}>
+                  {sticker.label}
+                </span>
+              ) : null}
             </div>
             {/* Thumbnails */}
             {images.length > 1 && (
@@ -191,10 +205,19 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-6">
               <span className="font-serif text-3xl text-charcoal">{formatPrice(totalPrice)}</span>
-              {pricing.compareAtPrice && (
-                <span className="text-lg text-brown/40 line-through">{formatPrice(pricing.compareAtPrice + variantModifier)}</span>
+              {compareAtPrice && (
+                <span className="text-lg text-brown/40 line-through">{formatPrice(compareAtPrice)}</span>
               )}
             </div>
+
+            {pricing.appliedTimedDiscount && product.active_product_discount?.end_date ? (
+              <div className="mb-6">
+                <DiscountCountdown
+                  endDate={product.active_product_discount.end_date}
+                  note="İndirimli fiyat için süre devam ediyor."
+                />
+              </div>
+            ) : null}
 
             {product.active_campaign?.subtitle ? (
               <div className="mb-6 rounded-2xl border border-gold/20 bg-gold/10 px-4 py-3 text-sm text-brown/80">
@@ -315,7 +338,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                 className="flex-1 flex items-center justify-center gap-2 py-4 bg-charcoal text-white font-medium rounded-xl hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-300 text-base"
               >
                 {shippingLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShoppingBag className="w-5 h-5" />}
-                {product.stock_quantity === 0 ? 'Tükendi' : !city || !district ? 'İl ve İlçe Seçin' : 'Sepete Ekle'}
+                {product.stock_quantity === 0 ? 'Tükendi' : 'Sepete Ekle'}
               </button>
               <button className="p-4 bg-white border border-stone/40 rounded-xl hover:border-red-300 hover:text-red-500 transition-colors">
                 <Heart className="w-5 h-5" />

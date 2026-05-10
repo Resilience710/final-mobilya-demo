@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 
 const MAX_ATTEMPTS = 3;
 const LOCKOUT_SECONDS = 120;
 const MIN_PASSWORD_LENGTH = 8;
 
-export default function RegisterPage() {
+function RegisterForm() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,14 +20,26 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
   const lockoutTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { signInWithGoogle } = useAuth();
+  const searchParams = useSearchParams();
+  const rawRedirect = searchParams.get('redirect') ?? '';
+  const redirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/hesabim';
+  const loginHref = redirect === '/hesabim' ? '/giris' : `/giris?redirect=${encodeURIComponent(redirect)}`;
 
   useEffect(() => {
     return () => { if (lockoutTimer.current) clearInterval(lockoutTimer.current); };
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'google_auth_failed') {
+      setError('Google ile kayıt tamamlanamadı. Lütfen tekrar deneyin.');
+    }
+  }, [searchParams]);
 
   const startLockout = () => {
     setLockoutRemaining(LOCKOUT_SECONDS);
@@ -41,6 +56,19 @@ export default function RegisterPage() {
   };
 
   const isLockedOut = lockoutRemaining > 0;
+
+  const handleGoogleSignIn = async () => {
+    if (isLockedOut || loading || googleLoading) return;
+
+    setError('');
+    setGoogleLoading(true);
+
+    const { error } = await signInWithGoogle(redirect);
+    if (error) {
+      setError('Google ile kayıt başlatılamadı. Lütfen tekrar deneyin.');
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +156,7 @@ export default function RegisterPage() {
               Hesabınız oluşturuldu. Artık giriş yapabilirsiniz.
             </p>
             <Link
-              href="/giris"
+              href={loginHref}
               className="inline-flex items-center gap-2 px-6 py-3 bg-charcoal text-white rounded-xl hover:bg-charcoal/90 transition-colors"
             >
               Giriş Yap <ArrowRight className="w-4 h-4" />
@@ -157,7 +185,25 @@ export default function RegisterPage() {
 
         {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-card p-8 border border-stone/30">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-4">
+            <GoogleAuthButton
+              onClick={handleGoogleSignIn}
+              loading={googleLoading}
+              disabled={loading || isLockedOut}
+              label="Google ile devam et"
+            />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-stone/30" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-[0.24em] text-brown/45">
+                <span className="bg-white px-3">veya e-posta ile</span>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-5 space-y-5">
             {error && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
@@ -265,7 +311,7 @@ export default function RegisterPage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading || isLockedOut}
+              disabled={loading || googleLoading || isLockedOut}
               className="w-full flex items-center justify-center gap-2 py-3.5 bg-charcoal text-white font-medium rounded-xl hover:bg-charcoal/90 disabled:opacity-50 transition-all duration-300"
             >
               {loading ? (
@@ -285,7 +331,7 @@ export default function RegisterPage() {
           <div className="mt-6 pt-6 border-t border-stone/30 text-center">
             <p className="text-sm text-brown/60">
               Zaten hesabınız var mı?{' '}
-              <Link href="/giris" className="text-gold font-medium hover:text-gold-light transition-colors">
+              <Link href={loginHref} className="text-gold font-medium hover:text-gold-light transition-colors">
                 Giriş Yapın
               </Link>
             </p>
@@ -293,5 +339,17 @@ export default function RegisterPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-cream">
+        <Loader2 className="w-8 h-8 animate-spin text-charcoal/40" />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }

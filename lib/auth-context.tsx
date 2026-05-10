@@ -12,6 +12,7 @@ interface AuthContextType {
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signInWithGoogle: (redirectPath?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -40,6 +41,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(data as Profile | null);
   };
 
+  const syncOAuthProfile = async (nextUser: User) => {
+    const fullName =
+      String(
+        nextUser.user_metadata?.full_name ??
+        nextUser.user_metadata?.name ??
+        ''
+      ).trim() || null;
+    const avatarUrl =
+      String(
+        nextUser.user_metadata?.avatar_url ??
+        nextUser.user_metadata?.picture ??
+        ''
+      ).trim() || null;
+
+    if (!fullName && !avatarUrl) {
+      return;
+    }
+
+    const { data: existingProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .eq('id', nextUser.id)
+      .maybeSingle();
+
+    if (profileError || !existingProfile) {
+      return;
+    }
+
+    const needsFullName = !existingProfile.full_name && !!fullName;
+    const needsAvatar = !existingProfile.avatar_url && !!avatarUrl;
+
+    if (!needsFullName && !needsAvatar) {
+      return;
+    }
+
+    await supabase
+      .from('profiles')
+      .update({
+        ...(needsFullName ? { full_name: fullName } : {}),
+        ...(needsAvatar ? { avatar_url: avatarUrl } : {}),
+      })
+      .eq('id', nextUser.id);
+  };
+
   const refreshProfile = async () => {
     if (user) {
       await fetchProfile(user.id);
@@ -61,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(nextUser);
 
         if (nextUser) {
+          await syncOAuthProfile(nextUser);
           await fetchProfile(nextUser.id);
         } else {
           setProfile(null);
@@ -90,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!mounted) return;
 
           if (nextUser) {
+            await syncOAuthProfile(nextUser);
             await fetchProfile(nextUser.id);
           } else {
             setProfile(null);
@@ -120,6 +167,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
+  const signInWithGoogle = async (redirectPath = '/hesabim') => {
+    const callbackUrl = new URL('/auth/callback', window.location.origin);
+    callbackUrl.searchParams.set('next', redirectPath);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: callbackUrl.toString(),
+      },
+    });
+
+    return { error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -135,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin: profile?.role === 'admin',
         signIn,
         signUp,
+        signInWithGoogle,
         signOut,
         refreshProfile,
       }}

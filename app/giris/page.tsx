@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 60;
@@ -16,10 +17,11 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
   const lockoutTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   // Validate redirect to prevent open-redirect attacks — only allow internal paths
@@ -29,6 +31,12 @@ function LoginForm() {
   useEffect(() => {
     return () => { if (lockoutTimer.current) clearInterval(lockoutTimer.current); };
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'google_auth_failed') {
+      setError('Google ile giriş tamamlanamadı. Lütfen tekrar deneyin.');
+    }
+  }, [searchParams]);
 
   const startLockout = () => {
     setLockoutRemaining(LOCKOUT_SECONDS);
@@ -74,6 +82,19 @@ function LoginForm() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    if (isLockedOut || loading || googleLoading) return;
+
+    setError('');
+    setGoogleLoading(true);
+
+    const { error } = await signInWithGoogle(redirect);
+    if (error) {
+      setError('Google ile giriş başlatılamadı. Lütfen tekrar deneyin.');
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-cream px-4 py-20">
       <motion.div
@@ -92,7 +113,25 @@ function LoginForm() {
 
         {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-card p-8 border border-stone/30">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-4">
+            <GoogleAuthButton
+              onClick={handleGoogleSignIn}
+              loading={googleLoading}
+              disabled={loading || isLockedOut}
+              label="Google ile devam et"
+            />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-stone/30" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-[0.24em] text-brown/45">
+                <span className="bg-white px-3">veya e-posta ile</span>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-5 space-y-5">
             {error && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
@@ -146,7 +185,7 @@ function LoginForm() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading || isLockedOut}
+              disabled={loading || googleLoading || isLockedOut}
               className="w-full flex items-center justify-center gap-2 py-3.5 bg-charcoal text-white font-medium rounded-xl hover:bg-charcoal/90 disabled:opacity-50 transition-all duration-300"
             >
               {loading ? (
@@ -164,16 +203,24 @@ function LoginForm() {
 
           {/* Divider */}
           <div className="mt-6 pt-6 border-t border-stone/30 text-center">
-            <p className="text-sm text-brown/60">
-              Hesabınız yok mu?{' '}
-              <Link href="/kayit" className="text-gold font-medium hover:text-gold-light transition-colors">
-                Kayıt Olun
-              </Link>
-            </p>
+            <LoginFooterLink redirect={redirect} />
           </div>
         </div>
       </motion.div>
     </div>
+  );
+}
+
+function LoginFooterLink({ redirect }: { redirect: string }) {
+  const registerHref = redirect === '/hesabim' ? '/kayit' : `/kayit?redirect=${encodeURIComponent(redirect)}`;
+
+  return (
+    <p className="text-sm text-brown/60">
+      Hesabınız yok mu?{' '}
+      <Link href={registerHref} className="text-gold font-medium hover:text-gold-light transition-colors">
+        Kayıt Olun
+      </Link>
+    </p>
   );
 }
 

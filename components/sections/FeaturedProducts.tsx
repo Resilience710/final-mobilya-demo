@@ -12,6 +12,8 @@ import {
   pickActiveCampaign,
   resolveProductPricing,
 } from '@/lib/campaigns';
+import { getProductSticker } from '@/lib/product-stickers';
+import DiscountCountdown from '@/components/ui/DiscountCountdown';
 
 type TabKey = 'discounted' | 'bestsellers' | 'newest';
 
@@ -79,12 +81,6 @@ export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('discounted');
-  const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    const interval = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -200,9 +196,7 @@ export default function FeaturedProducts() {
             : visibleProducts.map((product) => {
                 const pricing = resolveProductPricing(product, product.active_campaign);
                 const isNewTab = activeTab === 'newest';
-                const countdown = product.active_product_discount?.end_date
-                  ? getCountdownLabel(product.active_product_discount.end_date, now)
-                  : null;
+                const sticker = getProductSticker(product.slug);
 
                 return (
                   <Link
@@ -211,15 +205,24 @@ export default function FeaturedProducts() {
                     className="group rounded-[2rem] border border-stone/20 bg-white p-3 shadow-[0_18px_40px_rgba(28,28,26,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(28,28,26,0.1)]"
                   >
                     <div className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-cream">
-                      {pricing.discountPercent > 0 ? (
-                        <span className="absolute left-3 top-3 z-10 rounded-full bg-[#d25842] px-3 py-1 text-xs font-semibold text-white">
-                          %{pricing.discountPercent} İndirim
-                        </span>
-                      ) : isNewTab ? (
-                        <span className="absolute left-3 top-3 z-10 rounded-full bg-[#1f5aa8] px-3 py-1 text-xs font-semibold text-white">
-                          Yeni Ürün
-                        </span>
-                      ) : null}
+                      <div className="absolute left-3 top-3 z-10 flex flex-col gap-2">
+                        {sticker ? (
+                          <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white ${
+                            sticker.kind === 'advantage' ? 'bg-[#2f8f62]' : 'bg-[#f08a24]'
+                          }`}>
+                            {sticker.label}
+                          </span>
+                        ) : null}
+                        {pricing.discountPercent > 0 ? (
+                          <span className="rounded-full bg-[#d25842] px-3 py-1 text-xs font-semibold text-white">
+                            %{pricing.discountPercent} İndirim
+                          </span>
+                        ) : isNewTab ? (
+                          <span className="rounded-full bg-[#1f5aa8] px-3 py-1 text-xs font-semibold text-white">
+                            Yeni Ürün
+                          </span>
+                        ) : null}
+                      </div>
 
                       <button
                         type="button"
@@ -258,10 +261,13 @@ export default function FeaturedProducts() {
                           <span>{formatPrice(pricing.finalPrice)}</span>
                         )}
                       </div>
-                      {activeTab === 'discounted' && countdown ? (
-                        <p className="mt-3 text-sm font-medium text-[#d25842]">
-                          İndirim bitimine: {countdown}
-                        </p>
+                      {activeTab === 'discounted' && product.active_product_discount?.end_date ? (
+                        <div className="mt-3 flex justify-center">
+                          <DiscountCountdown
+                            endDate={product.active_product_discount.end_date}
+                            note="İndirimli fiyat için süre devam ediyor."
+                          />
+                        </div>
                       ) : null}
                     </div>
                   </Link>
@@ -280,19 +286,4 @@ export default function FeaturedProducts() {
       </div>
     </section>
   );
-}
-
-function getCountdownLabel(endDate: string, now: number) {
-  const remaining = new Date(endDate).getTime() - now;
-
-  if (remaining <= 0) {
-    return 'Süre doldu';
-  }
-
-  const days = Math.floor(remaining / 86_400_000);
-  const hours = Math.floor((remaining % 86_400_000) / 3_600_000);
-  const minutes = Math.floor((remaining % 3_600_000) / 60_000);
-  const seconds = Math.floor((remaining % 60_000) / 1000);
-
-  return `${days}g ${hours}s ${minutes}dk ${seconds}sn`;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,13 +10,14 @@ import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
 import { CheckoutFormData } from '@/lib/types';
 import { resolveProductPricing } from '@/lib/campaigns';
+import { turkeyProvinces } from '@/lib/turkey-locations';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
 }
 
 export default function CheckoutPage() {
-  const { items, subtotal, clearCart, shippingSelection } = useCart();
+  const { items, subtotal, clearCart, shippingSelection, setShippingSelection } = useCart();
   const { user, profile } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -29,6 +30,7 @@ export default function CheckoutPage() {
   const [shippingNote, setShippingNote] = useState(
     shippingSelection?.note || 'Teslimat adresine göre hesaplanır.',
   );
+  const provinces = useMemo(() => turkeyProvinces.map((province) => province.name), []);
 
   const [form, setForm] = useState<CheckoutFormData>({
     shipping_name: profile?.full_name || '',
@@ -40,13 +42,18 @@ export default function CheckoutPage() {
     buyer_identity_number: '',
     customer_note: '',
   });
+  const districts = useMemo(
+    () => turkeyProvinces.find((province) => province.name === form.shipping_city)?.districts || [],
+    [form.shipping_city],
+  );
+  const hasShippingSelection = !!form.shipping_city.trim() && !!form.shipping_district.trim();
 
   const totalPrice = subtotal + shippingCost;
 
   useEffect(() => {
-    if (!form.shipping_city.trim()) {
-      setShippingCost(499);
-      setShippingNote('Teslimat adresine göre hesaplanır.');
+    if (!form.shipping_city.trim() || !form.shipping_district.trim()) {
+      setShippingCost(0);
+      setShippingNote('Ödeme öncesi il ve ilçe seçimi zorunludur.');
       return;
     }
 
@@ -62,11 +69,17 @@ export default function CheckoutPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Nakliyat hesaplanamadı.');
         setShippingCost(Number(data.price) || 0);
-        setShippingNote(data.matchedRule?.note || 'Seçilen bölge için aktif nakliyat kuralı uygulandı.');
+        setShippingNote(data.matchedRule?.note || 'Seçilen bölge için nakliyat tutarı hesaplandı.');
+        setShippingSelection({
+          city: form.shipping_city,
+          district: form.shipping_district,
+          price: Number(data.price) || 0,
+          note: data.matchedRule?.note || data.note || null,
+        });
       } catch (error: any) {
         if (error.name === 'AbortError') return;
-        setShippingCost(499);
-        setShippingNote('Varsayılan nakliyat ücreti uygulanıyor.');
+        setShippingCost(0);
+        setShippingNote('Nakliyat hesaplanamadı. Lütfen il ve ilçe seçimini kontrol edin.');
       } finally {
         setShippingLoading(false);
       }
@@ -77,7 +90,7 @@ export default function CheckoutPage() {
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [form.shipping_city, form.shipping_district]);
+  }, [form.shipping_city, form.shipping_district, setShippingSelection]);
 
   if (!user) {
     return (
@@ -110,6 +123,12 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!form.shipping_city.trim() || !form.shipping_district.trim()) {
+      setError('Ödemeden önce il ve ilçe seçimi zorunludur.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -242,13 +261,36 @@ export default function CheckoutPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-charcoal mb-1.5">İl</label>
-                    <input type="text" required value={form.shipping_city} onChange={(e) => updateField('shipping_city', e.target.value)}
-                      className="w-full px-4 py-3 bg-cream/50 border border-stone/30 rounded-xl text-charcoal placeholder:text-brown/30 focus:outline-none focus:ring-2 focus:ring-gold/40 text-sm" placeholder="İstanbul" />
+                    <select
+                      required
+                      value={form.shipping_city}
+                      onChange={(e) => {
+                        updateField('shipping_city', e.target.value);
+                        updateField('shipping_district', '');
+                        setShippingSelection(null);
+                      }}
+                      className="w-full px-4 py-3 bg-cream/50 border border-stone/30 rounded-xl text-charcoal focus:outline-none focus:ring-2 focus:ring-gold/40 text-sm"
+                    >
+                      <option value="">İl seçin</option>
+                      {provinces.map((province) => (
+                        <option key={province} value={province}>{province}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-charcoal mb-1.5">İlçe</label>
-                    <input type="text" value={form.shipping_district} onChange={(e) => updateField('shipping_district', e.target.value)}
-                      className="w-full px-4 py-3 bg-cream/50 border border-stone/30 rounded-xl text-charcoal placeholder:text-brown/30 focus:outline-none focus:ring-2 focus:ring-gold/40 text-sm" placeholder="Kadıköy" />
+                    <select
+                      required
+                      value={form.shipping_district}
+                      onChange={(e) => updateField('shipping_district', e.target.value)}
+                      disabled={!form.shipping_city}
+                      className="w-full px-4 py-3 bg-cream/50 border border-stone/30 rounded-xl text-charcoal focus:outline-none focus:ring-2 focus:ring-gold/40 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <option value="">{form.shipping_city ? 'İlçe seçin' : 'Önce il seçin'}</option>
+                      {districts.map((district) => (
+                        <option key={district} value={district}>{district}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-charcoal mb-1.5">Posta Kodu</label>
@@ -296,8 +338,8 @@ export default function CheckoutPage() {
                 </p>
               </div>
 
-              <button type="submit" disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-4 bg-charcoal text-white font-medium rounded-xl hover:bg-gold disabled:opacity-50 transition-all duration-300 text-base">
+              <button type="submit" disabled={loading || !hasShippingSelection || shippingLoading}
+                className="w-full flex items-center justify-center gap-2 py-4 bg-charcoal text-white font-medium rounded-xl hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-300 text-base">
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Ödemeye Geç <CheckCircle className="w-5 h-5" /></>}
               </button>
             </form>
@@ -335,8 +377,8 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-brown/60 flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Kargo</span>
-                  <span className={shippingCost === 0 ? 'text-green-600' : 'text-charcoal'}>
-                    {shippingLoading ? 'Hesaplanıyor...' : shippingCost === 0 ? 'Ücretsiz' : formatPrice(shippingCost)}
+                  <span className={!hasShippingSelection ? 'text-brown/55' : shippingCost === 0 ? 'text-green-600' : 'text-charcoal'}>
+                    {!hasShippingSelection ? 'Seçim Bekleniyor' : shippingLoading ? 'Hesaplanıyor...' : shippingCost === 0 ? 'Ücretsiz' : formatPrice(shippingCost)}
                   </span>
                 </div>
                 <p className="text-xs text-brown/40">{shippingNote}</p>
