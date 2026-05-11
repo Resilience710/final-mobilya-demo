@@ -13,5 +13,12 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#fafaf8',
     lang: 'tr-TR',
     categories: ['shopping', 'lifestyle', 'home'],
+    icons: [
+      {
+        src: '/icon.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
+      },
+    ],
   };
 }
