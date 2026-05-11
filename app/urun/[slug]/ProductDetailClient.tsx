@@ -22,6 +22,15 @@ function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
 }
 
+function formatCampaignEndDate(value: string) {
+  return new Intl.DateTimeFormat('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Europe/Istanbul',
+  }).format(new Date(value));
+}
+
 function getVariantTypeLabel(variant: ProductVariant) {
   return variant.material?.trim() || variant.name?.trim() || 'Standart';
 }
@@ -240,7 +249,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                 </span>
                 {product.active_campaign.end_date ? (
                   <span className="rounded-full bg-gold/10 px-3 py-1 text-xs font-medium text-gold">
-                    {new Date(product.active_campaign.end_date).toLocaleDateString('tr-TR')} tarihine kadar
+                    {formatCampaignEndDate(product.active_campaign.end_date)} tarihine kadar
                   </span>
                 ) : null}
               </div>

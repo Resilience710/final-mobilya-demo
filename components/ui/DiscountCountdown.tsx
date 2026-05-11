@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getDiscountCountdownParts } from '@/lib/product-discount-timer';
+import { DiscountCountdownParts, getDiscountCountdownParts } from '@/lib/product-discount-timer';
 
 interface Props {
   endDate: string;
@@ -16,15 +16,24 @@ const units = [
   { key: 'seconds', label: 'SAN' },
 ] as const;
 
+const loadingParts: DiscountCountdownParts = {
+  expired: false,
+  days: '--',
+  hours: '--',
+  minutes: '--',
+  seconds: '--',
+};
+
 export default function DiscountCountdown({
   endDate,
   className = '',
   note = 'İndirimli fiyat için süre devam ediyor.',
 }: Props) {
-  const [now, setNow] = useState(Date.now());
-  const parts = getDiscountCountdownParts(endDate, now);
+  const [now, setNow] = useState<number | null>(null);
+  const parts = now === null ? loadingParts : getDiscountCountdownParts(endDate, now);
 
   useEffect(() => {
+    setNow(Date.now());
     const interval = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(interval);
   }, []);

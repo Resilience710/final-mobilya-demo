@@ -1,4 +1,6 @@
-import Script from 'next/script';
+'use client';
+
+import { useEffect } from 'react';
 
 type TawkToWidgetProps = {
   propertyId: string;
@@ -6,20 +8,27 @@ type TawkToWidgetProps = {
 };
 
 export default function TawkToWidget({ propertyId, widgetId }: TawkToWidgetProps) {
-  return (
-    <>
-      <Script id="tawk-to-api" strategy="afterInteractive">
-        {`
-          window.Tawk_API = window.Tawk_API || {};
-          window.Tawk_LoadStart = new Date();
-        `}
-      </Script>
-      <Script
-        id="tawk-to-loader"
-        src={`https://embed.tawk.to/${propertyId}/${widgetId}`}
-        strategy="afterInteractive"
-        crossOrigin="anonymous"
-      />
-    </>
-  );
+  useEffect(() => {
+    const existingScript = document.getElementById('tawk-to-loader');
+    if (existingScript) return;
+
+    const win = window as Window & {
+      Tawk_API?: Record<string, unknown>;
+      Tawk_LoadStart?: Date;
+    };
+
+    win.Tawk_API = win.Tawk_API || {};
+    win.Tawk_LoadStart = new Date();
+
+    const script = document.createElement('script');
+    script.id = 'tawk-to-loader';
+    script.async = true;
+    script.src = `https://embed.tawk.to/${propertyId}/${widgetId}`;
+    script.charset = 'UTF-8';
+    script.setAttribute('crossorigin', '*');
+
+    document.body.appendChild(script);
+  }, [propertyId, widgetId]);
+
+  return null;
 }

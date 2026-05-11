@@ -6,6 +6,7 @@ import WhatsAppChatButton from '@/components/layout/WhatsAppChatButton';
 
 const tawkToPropertyId = process.env.NEXT_PUBLIC_TAWK_TO_PROPERTY_ID?.trim();
 const tawkToWidgetId = process.env.NEXT_PUBLIC_TAWK_TO_WIDGET_ID?.trim();
+const tawkToEnabled = process.env.NEXT_PUBLIC_ENABLE_TAWK_TO === 'true';
 
 export default function SupportWidget() {
   const pathname = usePathname();
@@ -14,7 +15,7 @@ export default function SupportWidget() {
     return null;
   }
 
-  if (tawkToPropertyId && tawkToWidgetId) {
+  if (tawkToEnabled && tawkToPropertyId && tawkToWidgetId) {
     return (
       <>
         <TawkToWidget propertyId={tawkToPropertyId} widgetId={tawkToWidgetId} />
