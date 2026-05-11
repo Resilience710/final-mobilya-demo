@@ -174,8 +174,13 @@ export default function CheckoutPage() {
         }),
       });
 
-      // iyzico aktif değilse (anahtar henüz yapılandırılmamış) eski akışa düş
-      if (payRes.status === 503) {
+      // Demo fallback yalnızca geliştirme ortamındaki iyzico denemeleri için geçerli.
+      // Diğer sağlayıcılarda veya production'da 503 sonucu başarısızlık olarak ele alınmalı.
+      if (
+        payRes.status === 503 &&
+        paymentProvider === 'iyzico' &&
+        process.env.NODE_ENV !== 'production'
+      ) {
         setCheckoutMode('demo');
         setOrderId(data.order_id);
         setSuccess(true);

@@ -183,6 +183,14 @@ function normalizeSignatureValue(value: unknown): string {
     .replace(/\.$/, '');
 }
 
+function safeCompare(left: string, right: string): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(Buffer.from(left, 'utf8'), Buffer.from(right, 'utf8'));
+}
+
 export function verifyCheckoutRetrieveSignature(raw: any, token: string): boolean {
   const secretKey = process.env.IYZICO_SECRET_KEY;
   const signature = typeof raw?.signature === 'string' ? raw.signature : '';
@@ -207,7 +215,7 @@ export function verifyCheckoutRetrieveSignature(raw: any, token: string): boolea
     .update(parts.join(':'))
     .digest('hex');
 
-  return expected === signature;
+  return safeCompare(expected, signature);
 }
 
 export async function retrieveCheckoutForm(token: string): Promise<RetrieveResult> {

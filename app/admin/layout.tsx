@@ -46,10 +46,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 h-full w-64 bg-charcoal text-white z-50 transform transition-transform duration-300 ${
+      <aside className={`fixed top-0 left-0 z-50 flex h-full w-64 flex-col overflow-hidden bg-charcoal text-white transform transition-transform duration-300 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0`}>
-        <div className="p-6">
+        <div className="border-b border-white/10 p-6">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="font-serif text-lg text-white">FINAL MOBİLYA</h1>
@@ -60,7 +60,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
 
-          <nav className="space-y-1">
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <nav className="space-y-1 pb-4">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -80,7 +83,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </nav>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-white/10">
+        <div className="border-t border-white/10 p-6">
           <Link href="/" className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors mb-3 px-2">
             <ChevronLeft className="w-4 h-4" /> Siteye Dön
           </Link>

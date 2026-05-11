@@ -28,11 +28,17 @@ export default function AdminAnasayfaPage() {
   const [loading, setLoading] = useState(true);
   const [savingSlot, setSavingSlot] = useState<number | null>(null);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from('homepage_gallery_items').select('*').order('slot_index');
+    const { data, error: loadError } = await supabase.from('homepage_gallery_items').select('*').order('slot_index');
     setItems((data as HomepageGalleryItem[]) || []);
+    setLoadError(
+      loadError
+        ? 'Ana sayfa galeri kayıtları okunamadı. Önce `supabase/shipping_promotions_homepage_upgrade.sql` dosyasını çalıştırın.'
+        : ''
+    );
     setLoading(false);
   };
 
@@ -103,6 +109,7 @@ export default function AdminAnasayfaPage() {
         </p>
       </div>
 
+      {loadError ? <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">{loadError}</p> : null}
       {error ? <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p> : null}
 
       {loading ? (

@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     const supabase = createServiceSupabaseClient();
     const { data: order, error } = await supabase
       .from('orders')
-      .select('id, payment_status, payment_method')
+      .select('id, payment_status, payment_method, payment_data')
       .eq('id', orderId)
       .single();
 
@@ -36,6 +36,17 @@ export async function GET(req: NextRequest) {
 
     if (order.payment_status !== 'paid') {
       return NextResponse.json({ valid: false, reason: 'not-paid' }, { status: 409 });
+    }
+
+    const persistedProvider =
+      typeof order.payment_method === 'string' && order.payment_method.length > 0
+        ? order.payment_method
+        : typeof order.payment_data?.provider === 'string'
+          ? order.payment_data.provider
+          : '';
+
+    if (!persistedProvider || persistedProvider !== provider) {
+      return NextResponse.json({ valid: false, reason: 'provider-mismatch' }, { status: 409 });
     }
 
     return NextResponse.json({ valid: true });

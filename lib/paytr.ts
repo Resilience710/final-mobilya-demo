@@ -32,6 +32,14 @@ interface PaytrTokenResult {
   reason?: string;
 }
 
+function safeCompare(left: string, right: string): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(Buffer.from(left, 'utf8'), Buffer.from(right, 'utf8'));
+}
+
 function getRequiredConfig() {
   const merchantId = process.env.PAYTR_MERCHANT_ID?.trim();
   const merchantKey = process.env.PAYTR_MERCHANT_KEY?.trim();
@@ -192,5 +200,5 @@ export function verifyPaytrCallbackHash(input: {
     .update(input.merchantOid + merchantSalt + input.status + input.totalAmount)
     .digest('base64');
 
-  return expected === input.hash;
+  return safeCompare(expected, input.hash);
 }

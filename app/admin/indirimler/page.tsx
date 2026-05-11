@@ -34,10 +34,11 @@ export default function AdminIndirimlerPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   const load = async () => {
     setLoading(true);
-    const [{ data: discountData }, { data: productData }] = await Promise.all([
+    const [{ data: discountData, error: discountError }, { data: productData }] = await Promise.all([
       supabase
         .from('product_discounts')
         .select('*, product:products(id, name, slug, base_price, images)')
@@ -46,6 +47,11 @@ export default function AdminIndirimlerPage() {
     ]);
     setDiscounts((discountData as DiscountRow[]) || []);
     setProducts((productData as Product[]) || []);
+    setLoadError(
+      discountError || discountData === null
+        ? 'Ürün indirimleri okunamadı. Önce `supabase/shipping_promotions_homepage_upgrade.sql` dosyasını çalıştırın.'
+        : ''
+    );
     setLoading(false);
   };
 
@@ -166,6 +172,7 @@ export default function AdminIndirimlerPage() {
         </p>
       </div>
 
+      {loadError ? <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">{loadError}</p> : null}
       <div className="rounded-[28px] border border-gray-100 bg-white p-6 shadow-card">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-medium text-charcoal">{form.id ? 'İndirimi Düzenle' : 'Yeni Ürün İndirimi'}</h2>

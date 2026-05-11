@@ -22,10 +22,24 @@ function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
 }
 
+function getVariantTypeLabel(variant: ProductVariant) {
+  return variant.material?.trim() || variant.name?.trim() || 'Standart';
+}
+
+function getVariantColorLabel(variant: ProductVariant) {
+  return variant.color?.trim() || '';
+}
+
+function uniqueValues(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
 export default function ProductDetailClient({ product, relatedProducts }: Props) {
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    product.variants?.[0] || null
+  const activeVariants = useMemo(
+    () => (product.variants || []).filter((variant) => variant.is_active),
+    [product.variants],
   );
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(activeVariants[0] || null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [city, setCity] = useState('');
@@ -47,10 +61,40 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     [city],
   );
   const canAddToCart = product.stock_quantity > 0;
+  const productTypeOptions = useMemo(
+    () => uniqueValues(activeVariants.map((variant) => getVariantTypeLabel(variant))),
+    [activeVariants],
+  );
+  const selectedType = selectedVariant ? getVariantTypeLabel(selectedVariant) : productTypeOptions[0] || '';
+  const colorOptions = useMemo(() => uniqueValues(
+    activeVariants
+      .filter((variant) => !selectedType || getVariantTypeLabel(variant) === selectedType)
+      .map((variant) => getVariantColorLabel(variant)),
+  ), [activeVariants, selectedType]);
+  const selectedColor = selectedVariant ? getVariantColorLabel(selectedVariant) : colorOptions[0] || '';
+  const galleryImages = useMemo(() => {
+    const merged = [selectedVariant?.image_url, ...(product.images || [])]
+      .filter((image): image is string => Boolean(image));
+    const unique = merged.filter((image, index) => merged.indexOf(image) === index);
+    return unique.length > 0 ? unique : ['https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800'];
+  }, [product.images, selectedVariant?.image_url]);
 
-  const images = product.images?.length > 0
-    ? product.images
-    : ['https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800'];
+  useEffect(() => {
+    if (activeVariants.length === 0) {
+      if (selectedVariant !== null) {
+        setSelectedVariant(null);
+      }
+      return;
+    }
+
+    if (!selectedVariant || !activeVariants.some((variant) => variant.id === selectedVariant.id)) {
+      setSelectedVariant(activeVariants[0]);
+    }
+  }, [activeVariants, selectedVariant]);
+
+  useEffect(() => {
+    setSelectedImage(0);
+  }, [selectedVariant?.id]);
 
   useEffect(() => {
     if (!city || !district) {
@@ -142,7 +186,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   className="w-full h-full"
                 >
                   <Image
-                    src={images[selectedImage]}
+                    src={galleryImages[selectedImage]}
                     alt={product.name}
                     fill
                     className="object-cover"
@@ -165,9 +209,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               ) : null}
             </div>
             {/* Thumbnails */}
-            {images.length > 1 && (
+            {galleryImages.length > 1 && (
               <div className="flex gap-3">
-                {images.map((img, i) => (
+                {galleryImages.map((img, i) => (
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
@@ -228,28 +272,83 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
             <p className="text-brown/70 leading-relaxed mb-8">{product.description}</p>
 
             {/* Variants */}
-            {product.variants && product.variants.length > 0 && (
+            {activeVariants.length > 0 && (
               <div className="mb-8">
-                <h3 className="text-sm font-medium text-charcoal mb-3">
-                  Seçenek: <span className="text-gold">{selectedVariant?.name}</span>
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {product.variants.filter(v => v.is_active).map((variant) => (
-                    <button
-                      key={variant.id}
-                      onClick={() => setSelectedVariant(variant)}
-                      className={`px-4 py-2.5 rounded-xl text-sm transition-all border ${
-                        selectedVariant?.id === variant.id
-                          ? 'bg-charcoal text-white border-charcoal'
-                          : 'bg-white text-charcoal border-stone/40 hover:border-gold/60'
-                      }`}
-                    >
-                      {variant.name}
-                      {variant.price_modifier > 0 && (
-                        <span className="ml-1 text-xs opacity-70">+{formatPrice(variant.price_modifier)}</span>
-                      )}
-                    </button>
-                  ))}
+                <div className="space-y-5">
+                  <div>
+                    <h3 className="mb-3 text-sm font-medium text-charcoal">
+                      Ürün Tipi: <span className="text-gold">{selectedType || 'Standart'}</span>
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {productTypeOptions.map((type) => {
+                        const typeVariant =
+                          activeVariants.find((variant) =>
+                            getVariantTypeLabel(variant) === type &&
+                            (!selectedColor || getVariantColorLabel(variant) === selectedColor),
+                          ) ||
+                          activeVariants.find((variant) => getVariantTypeLabel(variant) === type) ||
+                          null;
+
+                        return (
+                          <button
+                            key={type}
+                            onClick={() => {
+                              setSelectedVariant(typeVariant);
+                            }}
+                            className={`rounded-xl border px-4 py-2.5 text-sm transition-all ${
+                              selectedType === type
+                                ? 'border-charcoal bg-charcoal text-white'
+                                : 'border-stone/40 bg-white text-charcoal hover:border-gold/60'
+                            }`}
+                          >
+                            {type}
+                            {(typeVariant?.price_modifier || 0) > 0 && (
+                              <span className="ml-1 text-xs opacity-70">+{formatPrice(typeVariant?.price_modifier || 0)}</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {colorOptions.length > 0 && (
+                    <div>
+                      <h3 className="mb-3 text-sm font-medium text-charcoal">
+                        Renk: <span className="text-gold">{selectedColor || 'Standart'}</span>
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {colorOptions.map((color) => {
+                          const colorVariant = activeVariants.find((variant) =>
+                            (!selectedType || getVariantTypeLabel(variant) === selectedType) &&
+                            getVariantColorLabel(variant) === color,
+                          );
+                          const colorVariantPrice = colorVariant?.price_modifier || 0;
+                          const isSelected = selectedColor === color;
+
+                          return (
+                            <button
+                              key={color}
+                              onClick={() => {
+                                if (colorVariant) {
+                                  setSelectedVariant(colorVariant);
+                                }
+                              }}
+                              className={`rounded-xl border px-4 py-2.5 text-sm transition-all ${
+                                isSelected
+                                  ? 'border-charcoal bg-charcoal text-white'
+                                  : 'border-stone/40 bg-white text-charcoal hover:border-gold/60'
+                              }`}
+                            >
+                              {color}
+                              {colorVariantPrice > 0 && (
+                                <span className="ml-1 text-xs opacity-70">+{formatPrice(colorVariantPrice)}</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
