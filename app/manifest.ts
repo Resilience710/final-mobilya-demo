@@ -15,9 +15,14 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['shopping', 'lifestyle', 'home'],
     icons: [
       {
-        src: '/icon.svg',
-        sizes: 'any',
-        type: 'image/svg+xml',
+        src: '/favicon.ico',
+        sizes: '16x16 32x32 48x48',
+        type: 'image/x-icon',
+      },
+      {
+        src: '/icon.png',
+        sizes: '32x32',
+        type: 'image/png',
       },
     ],
   };
