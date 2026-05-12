@@ -227,6 +227,67 @@ export interface CheckoutFormData {
   customer_note: string;
 }
 
+// Homepage content types
+export interface HeroSlide {
+  id: string;
+  sort_order: number;
+  image_url: string | null;
+  title1: string;
+  title2: string;
+  italic_text: string;
+  cta_text: string;
+  cta_href: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Testimonial {
+  id: string;
+  author_name: string;
+  review_text: string;
+  rating: number;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface TrustFeature {
+  id: string;
+  icon_name: string;
+  title: string;
+  description: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface RoomCollection {
+  id: string;
+  label: string;
+  href: string;
+  image_url: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface BrandStoryContent {
+  heading_line1: string;
+  heading_line2: string;
+  heading_line3: string;
+  subtitle_line1: string;
+  subtitle_line2: string;
+  cta_text: string;
+  cta_href: string;
+  left_image_url: string;
+  left_image_label: string;
+  left_image_href: string;
+  right_image_url: string;
+  right_image_label: string;
+  right_image_href: string;
+}
+
 // Admin stats
 export interface DashboardStats {
   totalOrders: number;

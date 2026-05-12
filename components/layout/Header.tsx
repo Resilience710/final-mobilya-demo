@@ -341,7 +341,9 @@ const topLinks = [
   { label: 'Bayilik', href: '/bayilik' },
 ];
 
-export default function Header() {
+const DEFAULT_ANNOUNCEMENT = '5.000 ₺ üzeri siparişlerde ücretsiz kargo · Tüm Türkiye\'ye teslimat';
+
+export default function Header({ announcement }: { announcement?: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -386,7 +388,7 @@ export default function Header() {
     <>
       <div className="bg-charcoal text-center py-2 px-4">
         <p className="text-[9px] sm:text-[10px] font-medium tracking-[0.08em] sm:tracking-[0.18em] uppercase text-stone/70 leading-snug">
-          5.000 ₺ üzeri siparişlerde ücretsiz kargo · Tüm Türkiye&apos;ye teslimat
+          {announcement ?? DEFAULT_ANNOUNCEMENT}
         </p>
       </div>
 
