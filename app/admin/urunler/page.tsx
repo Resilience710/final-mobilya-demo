@@ -23,6 +23,7 @@ type AdminVariantForm = {
   price_modifier: number;
   stock_quantity: number;
   color: string;
+  size: string;
   material: string;
   image_url: string;
   is_active: boolean;
@@ -54,6 +55,7 @@ function createEmptyVariant(): AdminVariantForm {
     price_modifier: 0,
     stock_quantity: 0,
     color: '',
+    size: '',
     material: '',
     image_url: '',
     is_active: true,
@@ -89,6 +91,7 @@ function mapVariantToForm(variant: ProductVariant): AdminVariantForm {
     price_modifier: variant.price_modifier || 0,
     stock_quantity: variant.stock_quantity || 0,
     color: variant.color || '',
+    size: variant.size || '',
     material: variant.material || '',
     image_url: variant.image_url || '',
     is_active: variant.is_active,
@@ -340,10 +343,11 @@ export default function AdminProductsPage() {
     const nextVariants = form.variants
       .map((variant) => {
         const material = variant.material.trim();
+        const size = variant.size.trim();
         const color = variant.color.trim();
-        const name = variant.name.trim() || [material, color].filter(Boolean).join(' - ') || 'Standart Varyant';
+        const name = variant.name.trim() || [material, size, color].filter(Boolean).join(' - ') || 'Standart Varyant';
 
-        if (!name && !material && !color && !variant.sku.trim() && !variant.image_url) {
+        if (!name && !material && !size && !color && !variant.sku.trim() && !variant.image_url) {
           return null;
         }
 
@@ -355,7 +359,7 @@ export default function AdminProductsPage() {
           stock_quantity: Number(variant.stock_quantity) || 0,
           color: color || null,
           material: material || null,
-          size: null,
+          size: size || null,
           image_url: variant.image_url || null,
           is_active: variant.is_active,
         };
@@ -695,7 +699,7 @@ export default function AdminProductsPage() {
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-semibold text-charcoal">Seçenekler</h3>
-                      <p className="mt-1 text-xs text-brown/50">Ürün tipi, renk ve varyanta özel görsel ekleyebilirsiniz.</p>
+                      <p className="mt-1 text-xs text-brown/50">Ürün tipi, ölçü, renk ve varyanta özel görsel ekleyebilirsiniz.</p>
                     </div>
                     <button
                       type="button"
@@ -718,7 +722,7 @@ export default function AdminProductsPage() {
                           <div className="mb-4 flex items-center justify-between gap-3">
                             <div>
                               <p className="text-sm font-semibold text-charcoal">Seçenek {index + 1}</p>
-                              <p className="text-xs text-brown/45">Ürün tipi, renk ve fiyat farkı tanımlayın.</p>
+                              <p className="text-xs text-brown/45">Ürün tipi, ölçü, renk ve fiyat farkı tanımlayın.</p>
                             </div>
                             <button
                               type="button"
@@ -751,12 +755,22 @@ export default function AdminProductsPage() {
                               />
                             </div>
                             <div>
+                              <label className="mb-1 block text-sm font-medium text-charcoal">Ölçü</label>
+                              <input
+                                type="text"
+                                value={variant.size}
+                                onChange={(e) => updateVariant(variant.localId, 'size', e.target.value)}
+                                placeholder="Örn: 240 cm, 3+2+1, 90x190"
+                                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                              />
+                            </div>
+                            <div>
                               <label className="mb-1 block text-sm font-medium text-charcoal">Varyant Adı</label>
                               <input
                                 type="text"
                                 value={variant.name}
                                 onChange={(e) => updateVariant(variant.localId, 'name', e.target.value)}
-                                placeholder="Boş kalırsa ürün tipi + renk ile oluşur"
+                                placeholder="Boş kalırsa ürün tipi + ölçü + renk ile oluşur"
                                 className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
                               />
                             </div>

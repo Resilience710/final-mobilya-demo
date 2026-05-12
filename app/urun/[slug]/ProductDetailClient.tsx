@@ -39,6 +39,10 @@ function getVariantColorLabel(variant: ProductVariant) {
   return variant.color?.trim() || '';
 }
 
+function getVariantSizeLabel(variant: ProductVariant) {
+  return variant.size?.trim() || '';
+}
+
 function uniqueValues(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
@@ -75,11 +79,18 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     [activeVariants],
   );
   const selectedType = selectedVariant ? getVariantTypeLabel(selectedVariant) : productTypeOptions[0] || '';
+  const sizeOptions = useMemo(() => uniqueValues(
+    activeVariants
+      .filter((variant) => !selectedType || getVariantTypeLabel(variant) === selectedType)
+      .map((variant) => getVariantSizeLabel(variant)),
+  ), [activeVariants, selectedType]);
+  const selectedSize = selectedVariant ? getVariantSizeLabel(selectedVariant) : sizeOptions[0] || '';
   const colorOptions = useMemo(() => uniqueValues(
     activeVariants
       .filter((variant) => !selectedType || getVariantTypeLabel(variant) === selectedType)
+      .filter((variant) => !selectedSize || getVariantSizeLabel(variant) === selectedSize)
       .map((variant) => getVariantColorLabel(variant)),
-  ), [activeVariants, selectedType]);
+  ), [activeVariants, selectedSize, selectedType]);
   const selectedColor = selectedVariant ? getVariantColorLabel(selectedVariant) : colorOptions[0] || '';
   const galleryImages = useMemo(() => {
     const merged = [selectedVariant?.image_url, ...(product.images || [])]
@@ -104,6 +115,33 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   useEffect(() => {
     setSelectedImage(0);
   }, [selectedVariant?.id]);
+
+  const findBestVariant = (filters: { type?: string; size?: string; color?: string }) => {
+    const { type = '', size = '', color = '' } = filters;
+    const strategies = [
+      (variant: ProductVariant) => (!type || getVariantTypeLabel(variant) === type)
+        && (!size || getVariantSizeLabel(variant) === size)
+        && (!color || getVariantColorLabel(variant) === color),
+      (variant: ProductVariant) => (!type || getVariantTypeLabel(variant) === type)
+        && (!size || getVariantSizeLabel(variant) === size),
+      (variant: ProductVariant) => (!type || getVariantTypeLabel(variant) === type)
+        && (!color || getVariantColorLabel(variant) === color),
+      (variant: ProductVariant) => (!type || getVariantTypeLabel(variant) === type),
+      (variant: ProductVariant) => (!size || getVariantSizeLabel(variant) === size)
+        && (!color || getVariantColorLabel(variant) === color),
+      (variant: ProductVariant) => (!size || getVariantSizeLabel(variant) === size),
+      (variant: ProductVariant) => (!color || getVariantColorLabel(variant) === color),
+    ];
+
+    for (const strategy of strategies) {
+      const match = activeVariants.find(strategy);
+      if (match) {
+        return match;
+      }
+    }
+
+    return activeVariants[0] || null;
+  };
 
   useEffect(() => {
     if (!city || !district) {
@@ -293,7 +331,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                         const typeVariant =
                           activeVariants.find((variant) =>
                             getVariantTypeLabel(variant) === type &&
+                            (!selectedSize || getVariantSizeLabel(variant) === selectedSize) &&
                             (!selectedColor || getVariantColorLabel(variant) === selectedColor),
+                          ) ||
+                          activeVariants.find((variant) =>
+                            getVariantTypeLabel(variant) === type &&
+                            (!selectedSize || getVariantSizeLabel(variant) === selectedSize),
                           ) ||
                           activeVariants.find((variant) => getVariantTypeLabel(variant) === type) ||
                           null;
@@ -302,7 +345,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                           <button
                             key={type}
                             onClick={() => {
-                              setSelectedVariant(typeVariant);
+                              setSelectedVariant(findBestVariant({ type, size: selectedSize, color: selectedColor }) || typeVariant);
                             }}
                             className={`rounded-xl border px-4 py-2.5 text-sm transition-all ${
                               selectedType === type
@@ -320,6 +363,48 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                     </div>
                   </div>
 
+                  {sizeOptions.length > 0 && (
+                    <div>
+                      <h3 className="mb-3 text-sm font-medium text-charcoal">
+                        Ölçü: <span className="text-gold">{selectedSize || 'Standart'}</span>
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {sizeOptions.map((size) => {
+                          const sizeVariant =
+                            activeVariants.find((variant) =>
+                              (!selectedType || getVariantTypeLabel(variant) === selectedType) &&
+                              getVariantSizeLabel(variant) === size &&
+                              (!selectedColor || getVariantColorLabel(variant) === selectedColor),
+                            ) ||
+                            activeVariants.find((variant) =>
+                              (!selectedType || getVariantTypeLabel(variant) === selectedType) &&
+                              getVariantSizeLabel(variant) === size,
+                            ) ||
+                            null;
+
+                          return (
+                            <button
+                              key={size}
+                              onClick={() => {
+                                setSelectedVariant(findBestVariant({ type: selectedType, size, color: selectedColor }) || sizeVariant);
+                              }}
+                              className={`rounded-xl border px-4 py-2.5 text-sm transition-all ${
+                                selectedSize === size
+                                  ? 'border-charcoal bg-charcoal text-white'
+                                  : 'border-stone/40 bg-white text-charcoal hover:border-gold/60'
+                              }`}
+                            >
+                              {size}
+                              {(sizeVariant?.price_modifier || 0) > 0 && (
+                                <span className="ml-1 text-xs opacity-70">+{formatPrice(sizeVariant?.price_modifier || 0)}</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {colorOptions.length > 0 && (
                     <div>
                       <h3 className="mb-3 text-sm font-medium text-charcoal">
@@ -329,6 +414,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                         {colorOptions.map((color) => {
                           const colorVariant = activeVariants.find((variant) =>
                             (!selectedType || getVariantTypeLabel(variant) === selectedType) &&
+                            (!selectedSize || getVariantSizeLabel(variant) === selectedSize) &&
                             getVariantColorLabel(variant) === color,
                           );
                           const colorVariantPrice = colorVariant?.price_modifier || 0;
@@ -336,10 +422,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
 
                           return (
                             <button
-                              key={color}
-                              onClick={() => {
+                            key={color}
+                            onClick={() => {
                                 if (colorVariant) {
-                                  setSelectedVariant(colorVariant);
+                                  setSelectedVariant(findBestVariant({ type: selectedType, size: selectedSize, color }) || colorVariant);
                                 }
                               }}
                               className={`rounded-xl border px-4 py-2.5 text-sm transition-all ${
