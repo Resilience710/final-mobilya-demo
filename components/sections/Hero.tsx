@@ -50,7 +50,8 @@ const DEFAULT_SLIDES: HeroSlide[] = [
 ];
 
 export default function Hero({ slides }: { slides?: HeroSlide[] }) {
-  const activeSlides = (slides && slides.length > 0) ? slides : DEFAULT_SLIDES;
+  const validSlides = slides?.filter(s => s.image_url) ?? [];
+  const activeSlides = validSlides.length > 0 ? validSlides : DEFAULT_SLIDES;
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -73,16 +74,14 @@ export default function Hero({ slides }: { slides?: HeroSlide[] }) {
           transition={{ duration: 1.1, ease: [0.25, 0.1, 0.25, 1] }}
           className="absolute inset-0"
         >
-          {slide.image_url && (
-            <Image
-              src={slide.image_url}
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover"
-            />
-          )}
+          <Image
+            src={slide.image_url!}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
           <div className="absolute inset-0 bg-charcoal/35" />
         </motion.div>
       </AnimatePresence>

@@ -20,7 +20,12 @@ const DEFAULT: BrandStoryContent = {
 };
 
 export default function BrandStory({ content }: { content?: BrandStoryContent | null }) {
-  const c = content ?? DEFAULT;
+  const raw = content ?? DEFAULT;
+  const c: BrandStoryContent = {
+    ...raw,
+    left_image_url:  raw.left_image_url  || DEFAULT.left_image_url,
+    right_image_url: raw.right_image_url || DEFAULT.right_image_url,
+  };
 
   return (
     <section className="bg-cream py-20 lg:py-28">

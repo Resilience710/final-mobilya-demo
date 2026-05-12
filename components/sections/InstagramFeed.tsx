@@ -9,7 +9,8 @@ const DEFAULT_ROOMS: RoomCollection[] = [
 ];
 
 export default function InstagramFeed({ rooms }: { rooms?: RoomCollection[] }) {
-  const list = (rooms && rooms.length > 0) ? rooms : DEFAULT_ROOMS;
+  const validRooms = rooms?.filter(r => r.image_url) ?? [];
+  const list = validRooms.length > 0 ? validRooms : DEFAULT_ROOMS;
 
   return (
     <section className="bg-cream py-12 lg:py-16">
