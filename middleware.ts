@@ -102,9 +102,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protect /hesabim routes
-  // /siparis/onay is intentionally public — iyzico callback redirects here and
-  // the user's session may briefly be in an inconsistent state after the
-  // cross-site POST→GET round trip.
+  // /siparis/onay is intentionally public — hosted payment flows redirect here
+  // and the user's session may briefly be in an inconsistent state after the
+  // cross-site redirect round trip.
   const path = request.nextUrl.pathname;
   const needsAuth =
     path.startsWith('/hesabim') ||

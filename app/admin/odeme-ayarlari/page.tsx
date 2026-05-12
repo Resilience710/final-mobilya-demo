@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Landmark, Loader2, Save } from 'lucide-react';
+import Image from 'next/image';
+import { Loader2, Save } from 'lucide-react';
 
 interface FormState {
   bankName: string;
@@ -126,8 +127,14 @@ export default function AdminPaymentSettingsPage() {
       ) : (
         <form onSubmit={save} className="max-w-3xl space-y-6 rounded-[32px] border border-gray-100 bg-white p-6 shadow-card sm:p-8">
           <div className="flex items-center gap-3 rounded-2xl bg-cream/70 px-4 py-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gold/10 text-gold">
-              <Landmark className="h-5 w-5" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-stone/20 bg-white p-2 shadow-sm">
+              <Image
+                src="/enpara.png"
+                alt="Enpara"
+                width={80}
+                height={27}
+                className="h-auto w-full object-contain"
+              />
             </div>
             <div>
               <p className="text-sm font-medium text-charcoal">Aktif veri kaynağı</p>

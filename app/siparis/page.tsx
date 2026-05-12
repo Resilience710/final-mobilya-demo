@@ -12,7 +12,7 @@ import { CheckoutFormData } from '@/lib/types';
 import { resolveProductPricing } from '@/lib/campaigns';
 import { turkeyProvinces } from '@/lib/turkey-locations';
 
-type PaymentProvider = 'iyzico' | 'paytr' | 'bank_transfer';
+type PaymentProvider = 'paytr' | 'bank_transfer';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
@@ -26,8 +26,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
-  const [checkoutMode, setCheckoutMode] = useState<'payment' | 'demo'>('payment');
-  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>('iyzico');
+  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>('paytr');
   const [shippingCost, setShippingCost] = useState(shippingSelection?.price ?? 499);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingNote, setShippingNote] = useState(
@@ -42,7 +41,6 @@ export default function CheckoutPage() {
     shipping_district: shippingSelection?.district || '',
     shipping_postal_code: '',
     shipping_phone: profile?.phone || '',
-    buyer_identity_number: '',
     customer_note: '',
   });
   const districts = useMemo(
@@ -160,9 +158,7 @@ export default function CheckoutPage() {
       const initPath =
         paymentProvider === 'paytr'
           ? '/api/payment/paytr/init'
-          : paymentProvider === 'bank_transfer'
-            ? '/api/payment/bank-transfer/init'
-            : '/api/payment/iyzico/init';
+          : '/api/payment/bank-transfer/init';
 
       // Sipariş DB'de oluştu. Şimdi seçilen ödeme sağlayıcısını başlat.
       const payRes = await fetch(initPath, {
@@ -170,24 +166,8 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           order_id: data.order_id,
-          buyer_identity_number: form.buyer_identity_number?.trim() || undefined,
         }),
       });
-
-      // Demo fallback yalnızca geliştirme ortamındaki iyzico denemeleri için geçerli.
-      // Diğer sağlayıcılarda veya production'da 503 sonucu başarısızlık olarak ele alınmalı.
-      if (
-        payRes.status === 503 &&
-        paymentProvider === 'iyzico' &&
-        process.env.NODE_ENV !== 'production'
-      ) {
-        setCheckoutMode('demo');
-        setOrderId(data.order_id);
-        setSuccess(true);
-        clearCart();
-        setLoading(false);
-        return;
-      }
 
       const payData = await payRes.json();
       if (!payRes.ok || !payData.paymentPageUrl) {
@@ -208,16 +188,10 @@ export default function CheckoutPage() {
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-md">
           <div className="bg-white rounded-2xl shadow-card p-10 border border-stone/30">
             <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-5" />
-            <h2 className="font-serif text-2xl text-charcoal mb-3">
-              {checkoutMode === 'demo' ? 'Demo Siparişi Oluşturuldu' : 'Siparişiniz Alındı!'}
-            </h2>
+            <h2 className="font-serif text-2xl text-charcoal mb-3">Siparişiniz Alındı!</h2>
             <p className="text-brown/70 text-sm mb-2">Sipariş numaranız:</p>
             <p className="text-charcoal font-mono text-sm bg-cream rounded-lg px-4 py-2 mb-6 break-all">{orderId}</p>
-            <p className="text-brown/60 text-sm mb-8">
-              {checkoutMode === 'demo'
-                ? 'Demo ortamında online ödeme kapalı. Sipariş kaydı oluşturuldu ve admin panelinden takip edilebilir.'
-                : 'Siparişiniz onaylandıktan sonra sizinle iletişime geçeceğiz.'}
-            </p>
+            <p className="text-brown/60 text-sm mb-8">Siparişiniz onaylandıktan sonra sizinle iletişime geçeceğiz.</p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link href="/hesabim/siparislerim" className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-charcoal text-white rounded-xl hover:bg-gold transition-colors text-sm">
                 Siparişlerim
@@ -320,14 +294,6 @@ export default function CheckoutPage() {
                         className="w-full pl-10 pr-4 py-3 bg-cream/50 border border-stone/30 rounded-xl text-charcoal placeholder:text-brown/30 focus:outline-none focus:ring-2 focus:ring-gold/40 text-sm" placeholder="0 5XX XXX XX XX" />
                     </div>
                   </div>
-                  {paymentProvider === 'iyzico' && (
-                    <div>
-                      <label className="block text-sm font-medium text-charcoal mb-1.5">TC Kimlik No</label>
-                      <input type="text" value={form.buyer_identity_number || ''} onChange={(e) => updateField('buyer_identity_number', e.target.value.replace(/\D/g, '').slice(0, 11))}
-                        className="w-full px-4 py-3 bg-cream/50 border border-stone/30 rounded-xl text-charcoal placeholder:text-brown/30 focus:outline-none focus:ring-2 focus:ring-gold/40 text-sm"
-                        placeholder="11 haneli kimlik numarası" />
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -344,21 +310,6 @@ export default function CheckoutPage() {
               <div className="bg-white rounded-2xl border border-stone/20 p-6 mb-6">
                 <h2 className="font-serif text-xl text-charcoal mb-4">Ödeme Yöntemi</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentProvider('iyzico')}
-                    className={`rounded-2xl border p-5 text-left transition-all ${
-                      paymentProvider === 'iyzico'
-                        ? 'border-gold bg-gold/10 shadow-card'
-                        : 'border-stone/30 bg-cream/40 hover:border-gold/50'
-                    }`}
-                  >
-                    <p className="text-xs uppercase tracking-[0.28em] text-brown/45 mb-2">Hosted Checkout</p>
-                    <p className="font-serif text-xl text-charcoal mb-2">iyzico</p>
-                    <p className="text-sm text-brown/70">
-                      Kart verisi iyzico sayfasında alınır. 11 haneli TC kimlik numarası gerekir.
-                    </p>
-                  </button>
                   <button
                     type="button"
                     onClick={() => setPaymentProvider('paytr')}
@@ -398,11 +349,6 @@ export default function CheckoutPage() {
                 <p className="text-sm text-brown/70">
                   Ödemeniz seçtiğiniz sağlayıcının PCI uyumlu hosted ödeme ekranında alınır. Kart bilgileriniz sitemize asla iletilmez.
                 </p>
-                {paymentProvider === 'iyzico' && (
-                  <p className="text-xs text-brown/50 mt-2">
-                    iyzico entegrasyonunda ödeme başlatma için 11 haneli TC kimlik numarası gerekir. Bu alan sadece iyzico isteğinde kullanılır.
-                  </p>
-                )}
                 {paymentProvider === 'paytr' && (
                   <p className="text-xs text-brown/50 mt-2">
                     PayTR akışında kullanıcı ödeme sonrası önce bekleme ekranına döner; kesin başarı bilgisi sunucu callback doğrulamasından sonra siparişe işlenir.
@@ -413,9 +359,6 @@ export default function CheckoutPage() {
                     Havale/EFT seçildiğinde sipariş hemen oluşturulur ve banka talimat sayfası açılır. Ödeme doğrulaması admin kontrolü ile tamamlanır.
                   </p>
                 )}
-                <p className="text-xs text-brown/50 mt-2">
-                  Demo ortamında sağlayıcı anahtarları tanımlı değilse sipariş kaydı demo olarak oluşturulur ve ödeme adımı atlanır.
-                </p>
               </div>
 
               <button type="submit" disabled={loading || !hasShippingSelection || shippingLoading}
@@ -425,7 +368,7 @@ export default function CheckoutPage() {
                     ? 'PayTR ile Devam Et'
                     : paymentProvider === 'bank_transfer'
                       ? 'Havale Talimatına Geç'
-                      : 'iyzico ile Devam Et'} <CheckCircle className="w-5 h-5" />
+                      : 'Devam Et'} <CheckCircle className="w-5 h-5" />
                 </>}
               </button>
             </form>

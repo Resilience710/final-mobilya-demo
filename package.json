@@ -18,7 +18,6 @@
     "@supabase/supabase-js": "^2.105.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.1.7",
-    "iyzipay": "^2.0.67",
     "lucide-react": "^0.378.0",
     "next": "14.2.0",
     "react": "^18.3.1",

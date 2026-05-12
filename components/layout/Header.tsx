@@ -394,14 +394,14 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[72px]">
             <Link href="/" className="flex-shrink-0 group">
-              <div className="flex flex-col leading-none">
-                <span className="font-serif text-[22px] font-medium tracking-[0.05em] text-charcoal group-hover:text-gold transition-colors duration-300">
-                  FINAL
-                </span>
-                <span className="text-[8px] font-bold tracking-[0.3em] uppercase text-gold mt-0.5">
-                  MOBİLYA
-                </span>
-              </div>
+              <Image
+                src="/enpara.png"
+                alt="Enpara"
+                width={150}
+                height={50}
+                priority
+                className="h-10 w-auto transition-opacity duration-300 group-hover:opacity-85"
+              />
             </Link>
 
             <nav className="hidden xl:flex items-center gap-6">
@@ -617,12 +617,13 @@ export default function Header() {
               className="safe-bottom fixed right-0 top-0 bottom-0 w-[320px] max-w-[88vw] bg-cream z-50 overflow-y-auto shadow-modal lg:hidden flex flex-col"
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-stone/20">
-                <div className="flex flex-col leading-none">
-                  <span className="font-serif text-xl text-charcoal">FINAL</span>
-                  <span className="text-[8px] font-bold tracking-[0.3em] uppercase text-gold mt-0.5">
-                    MOBİLYA
-                  </span>
-                </div>
+                <Image
+                  src="/enpara.png"
+                  alt="Enpara"
+                  width={132}
+                  height={44}
+                  className="h-9 w-auto"
+                />
                 <button
                   onClick={() => setMenuOpen(false)}
                   className="p-1.5 text-brown/60 hover:text-charcoal rounded-lg transition-colors"

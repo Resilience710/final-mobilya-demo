@@ -43,7 +43,7 @@ export default function GizlilikPolitikasiPage() {
           {
             title: 'Ödeme ve üçüncü taraf hizmetler',
             paragraphs: [
-              'Ödeme akışı iyzico entegrasyonu üzerinden başlatılır. Sipariş yönetimi, kimlik doğrulama ve veri saklama katmanlarında Supabase servisleri kullanılır.',
+              'Ödeme akışı PayTR hosted ödeme altyapısı ve banka havalesi / EFT seçenekleri üzerinden yürütülür. Sipariş yönetimi, kimlik doğrulama ve veri saklama katmanlarında Supabase servisleri kullanılır.',
               'Ödeme sonucu, sipariş statüsü ve referans bilgileri güvenli sunucu rotaları üzerinden işlenir; istemciden gelen fiyat bilgileri sipariş oluştururken doğrudan kabul edilmez.',
             ],
           },
