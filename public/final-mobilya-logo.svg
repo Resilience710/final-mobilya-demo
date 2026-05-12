@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 80" width="520" height="80">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&amp;family=Montserrat:wght@700&amp;display=swap');
+    </style>
+  </defs>
+  <text
+    x="0"
+    y="62"
+    font-family="'Montserrat', 'Arial Black', Arial, sans-serif"
+    font-weight="700"
+    font-size="68"
+    fill="#7B7B7B"
+    letter-spacing="3"
+  >FİNAL</text>
+  <text
+    x="238"
+    y="62"
+    font-family="'Cinzel', 'Trajan Pro', 'Times New Roman', Georgia, serif"
+    font-weight="400"
+    font-size="68"
+    fill="#8B7240"
+    letter-spacing="3"
+  >MOBİLYA</text>
+</svg>

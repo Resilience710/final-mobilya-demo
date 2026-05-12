@@ -395,9 +395,9 @@ export default function Header() {
           <div className="flex items-center justify-between h-[72px]">
             <Link href="/" className="flex-shrink-0 group">
               <Image
-                src="/enpara.png"
-                alt="Enpara"
-                width={150}
+                src="/final-mobilya-logo.svg"
+                alt="Final Mobilya"
+                width={200}
                 height={50}
                 priority
                 className="h-10 w-auto transition-opacity duration-300 group-hover:opacity-85"
@@ -618,9 +618,9 @@ export default function Header() {
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-stone/20">
                 <Image
-                  src="/enpara.png"
-                  alt="Enpara"
-                  width={132}
+                  src="/final-mobilya-logo.svg"
+                  alt="Final Mobilya"
+                  width={176}
                   height={44}
                   className="h-9 w-auto"
                 />
