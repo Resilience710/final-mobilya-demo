@@ -4,9 +4,14 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { HomepageGalleryItem } from '@/lib/types';
 
 export default async function ShopTheLook() {
-  const supabase = createServerSupabaseClient();
-  const { data } = await supabase.from('homepage_gallery_items').select('*').eq('is_active', true).order('slot_index');
-  const galleryItems = ((data as HomepageGalleryItem[]) || []).slice(0, 4);
+  let galleryItems: HomepageGalleryItem[] = [];
+  try {
+    const supabase = createServerSupabaseClient();
+    const { data } = await supabase.from('homepage_gallery_items').select('*').eq('is_active', true).order('slot_index');
+    galleryItems = ((data as HomepageGalleryItem[]) || []).slice(0, 4);
+  } catch {
+    // table may not exist yet
+  }
   const slots = Array.from({ length: 4 }, (_, index) => galleryItems.find((item) => item.slot_index === index + 1) || null);
 
   return (
