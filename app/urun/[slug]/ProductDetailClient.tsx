@@ -32,7 +32,7 @@ function formatCampaignEndDate(value: string) {
 }
 
 function getVariantTypeLabel(variant: ProductVariant) {
-  return variant.material?.trim() || variant.name?.trim() || 'Standart';
+  return variant.material?.trim() || '';
 }
 
 function getVariantColorLabel(variant: ProductVariant) {
@@ -78,7 +78,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     () => uniqueValues(activeVariants.map((variant) => getVariantTypeLabel(variant))),
     [activeVariants],
   );
-  const selectedType = selectedVariant ? getVariantTypeLabel(selectedVariant) : productTypeOptions[0] || '';
+  const selectedType = selectedVariant ? getVariantTypeLabel(selectedVariant) : '';
   const sizeOptions = useMemo(() => uniqueValues(
     activeVariants
       .filter((variant) => !selectedType || getVariantTypeLabel(variant) === selectedType)
@@ -322,46 +322,48 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
             {activeVariants.length > 0 && (
               <div className="mb-8">
                 <div className="space-y-5">
-                  <div>
-                    <h3 className="mb-3 text-sm font-medium text-charcoal">
-                      Ürün Tipi: <span className="text-gold">{selectedType || 'Standart'}</span>
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {productTypeOptions.map((type) => {
-                        const typeVariant =
-                          activeVariants.find((variant) =>
-                            getVariantTypeLabel(variant) === type &&
-                            (!selectedSize || getVariantSizeLabel(variant) === selectedSize) &&
-                            (!selectedColor || getVariantColorLabel(variant) === selectedColor),
-                          ) ||
-                          activeVariants.find((variant) =>
-                            getVariantTypeLabel(variant) === type &&
-                            (!selectedSize || getVariantSizeLabel(variant) === selectedSize),
-                          ) ||
-                          activeVariants.find((variant) => getVariantTypeLabel(variant) === type) ||
-                          null;
+                  {productTypeOptions.length > 0 && (
+                    <div>
+                      <h3 className="mb-3 text-sm font-medium text-charcoal">
+                        Ürün Tipi: <span className="text-gold">{selectedType || 'Standart'}</span>
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {productTypeOptions.map((type) => {
+                          const typeVariant =
+                            activeVariants.find((variant) =>
+                              getVariantTypeLabel(variant) === type &&
+                              (!selectedSize || getVariantSizeLabel(variant) === selectedSize) &&
+                              (!selectedColor || getVariantColorLabel(variant) === selectedColor),
+                            ) ||
+                            activeVariants.find((variant) =>
+                              getVariantTypeLabel(variant) === type &&
+                              (!selectedSize || getVariantSizeLabel(variant) === selectedSize),
+                            ) ||
+                            activeVariants.find((variant) => getVariantTypeLabel(variant) === type) ||
+                            null;
 
-                        return (
-                          <button
-                            key={type}
-                            onClick={() => {
-                              setSelectedVariant(findBestVariant({ type, size: selectedSize, color: selectedColor }) || typeVariant);
-                            }}
-                            className={`rounded-xl border px-4 py-2.5 text-sm transition-all ${
-                              selectedType === type
-                                ? 'border-charcoal bg-charcoal text-white'
-                                : 'border-stone/40 bg-white text-charcoal hover:border-gold/60'
-                            }`}
-                          >
-                            {type}
-                            {(typeVariant?.price_modifier || 0) > 0 && (
-                              <span className="ml-1 text-xs opacity-70">+{formatPrice(typeVariant?.price_modifier || 0)}</span>
-                            )}
-                          </button>
-                        );
-                      })}
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => {
+                                setSelectedVariant(findBestVariant({ type, size: selectedSize, color: selectedColor }) || typeVariant);
+                              }}
+                              className={`rounded-xl border px-4 py-2.5 text-sm transition-all ${
+                                selectedType === type
+                                  ? 'border-charcoal bg-charcoal text-white'
+                                  : 'border-stone/40 bg-white text-charcoal hover:border-gold/60'
+                              }`}
+                            >
+                              {type}
+                              {(typeVariant?.price_modifier || 0) > 0 && (
+                                <span className="ml-1 text-xs opacity-70">+{formatPrice(typeVariant?.price_modifier || 0)}</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {sizeOptions.length > 0 && (
                     <div>

@@ -41,13 +41,13 @@ const DEFAULT_HERO_SLIDES: HomepageHeroSlide[] = [
 ];
 
 const DEFAULT_CATEGORY_ITEMS: HomepageCategoryItem[] = [
-  { label: 'KOLTUKLAR', href: '/kategori/oturma-grubu' },
-  { label: 'GARDIROPLAR', href: '/kategori/yatak-odasi' },
-  { label: 'SANDALYELER', href: '/kategori/yemek-odasi' },
-  { label: 'YEMEK MASALARI', href: '/kategori/yemek-odasi' },
-  { label: 'ÇALIŞMA ODASI', href: '/kategori/calisma-odasi' },
-  { label: 'AYDINLATMA', href: '/kategori/aksesuar' },
+  { label: 'OTURMA GRUBU', href: '/kategori/oturma-grubu' },
+  { label: 'YATAK ODASI', href: '/kategori/yatak-odasi' },
+  { label: 'YEMEK ODASI', href: '/kategori/yemek-odasi' },
   { label: 'GENÇ ODASI', href: '/kategori/genc-odasi' },
+  { label: 'BAZA BAŞLIK', href: '/kategori/baza-baslik' },
+  { label: 'YATAK', href: '/kategori/yatak' },
+  { label: 'TAMAMLAYICI ÜRÜNLER', href: '/kategori/tamamlayici-urunler' },
 ];
 
 const DEFAULT_FEATURED_TABS: HomepageFeaturedTab[] = [
@@ -73,21 +73,21 @@ const DEFAULT_FEATURED_TABS: HomepageFeaturedTab[] = [
 
 const DEFAULT_ROOM_SHOWCASE_ITEMS: HomepageRoomShowcaseItem[] = [
   {
-    label: 'OTURMA ODALARI',
+    label: 'OTURMA GRUBU',
     href: '/kategori/oturma-grubu',
     image: 'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=900&q=85',
     imageAlt: 'Oturma odası koleksiyonu',
     ctaLabel: 'İNCELE',
   },
   {
-    label: 'YATAK ODALARI',
+    label: 'YATAK ODASI',
     href: '/kategori/yatak-odasi',
     image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=900&q=85',
     imageAlt: 'Yatak odası koleksiyonu',
     ctaLabel: 'İNCELE',
   },
   {
-    label: 'YEMEK ODALARI',
+    label: 'YEMEK ODASI',
     href: '/kategori/yemek-odasi',
     image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?w=900&q=85',
     imageAlt: 'Yemek odası koleksiyonu',

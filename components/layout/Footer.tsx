@@ -9,9 +9,10 @@ const footerLinks: Record<string, { label: string; href: string }[]> = {
     { label: 'Oturma Grubu', href: '/kategori/oturma-grubu' },
     { label: 'Yatak Odası', href: '/kategori/yatak-odasi' },
     { label: 'Yemek Odası', href: '/kategori/yemek-odasi' },
-    { label: 'Çalışma Odası', href: '/kategori/calisma-odasi' },
     { label: 'Genç Odası', href: '/kategori/genc-odasi' },
-    { label: 'Aksesuar', href: '/kategori/aksesuar' },
+    { label: 'Baza Başlık', href: '/kategori/baza-baslik' },
+    { label: 'Yatak', href: '/kategori/yatak' },
+    { label: 'Tamamlayıcı Ürünler', href: '/kategori/tamamlayici-urunler' },
     { label: 'Tüm Ürünler', href: '/urunler' },
   ],
   'Yardım': [

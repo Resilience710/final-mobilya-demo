@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, ShoppingBag, Menu, X, User, LogOut,
-  ShieldCheck, ChevronDown, ArrowRight, Zap,
+  ShieldCheck, ChevronDown, ArrowRight,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useCart } from '@/lib/cart-context';
@@ -36,7 +36,7 @@ interface MenuItem {
 
 const megaMenuItems: MenuItem[] = [
   {
-    label: 'Oturma Odası',
+    label: 'Oturma Grubu',
     href: '/kategori/oturma-grubu',
     columns: [
       {
@@ -70,6 +70,38 @@ const megaMenuItems: MenuItem[] = [
         title: 'Salonun merkezini güçlendiren sehpa ve TV ünitesi önerileri',
         href: '/blog/kucuk-salonlar-icin-ferah-dekorasyon-onerileri',
         image: 'https://images.unsplash.com/photo-1484101403633-562f891dc89a?w=1200&q=85',
+      },
+    ],
+  },
+  {
+    label: 'Yatak Odası',
+    href: '/kategori/yatak-odasi',
+    columns: [
+      {
+        links: [
+          { label: 'Yatak Odası Takımı', href: '/kategori/yatak-odasi' },
+          { label: 'Gardırop', href: '/urunler?arama=gardırop' },
+          { label: 'Şifonyer', href: '/urunler?arama=şifonyer' },
+        ],
+      },
+      {
+        links: [
+          { label: 'Komodin', href: '/urunler?arama=komodin' },
+          { label: 'Çamaşırlık', href: '/urunler?arama=çamaşırlık' },
+          { label: 'Puf', href: '/urunler?arama=puf' },
+        ],
+      },
+    ],
+    previews: [
+      {
+        title: 'Yatak odasında dinginlik sağlayan doğal ton ve doku önerileri',
+        href: '/blog/yatak-odasinda-huzurlu-bir-atmosfer-nasil-kurulur',
+        image: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=1200&q=85',
+      },
+      {
+        title: 'Gardırop ve komodin planında hareket alanını koruyan çözümler',
+        href: '/kategori/yatak-odasi',
+        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=85',
       },
     ],
   },
@@ -112,40 +144,71 @@ const megaMenuItems: MenuItem[] = [
     ],
   },
   {
-    label: 'Yatak Odası',
-    href: '/kategori/yatak-odasi',
+    label: 'Genç Odası',
+    href: '/kategori/genc-odasi',
     columns: [
       {
         links: [
-          { label: 'Yatak Odası Takımı', href: '/kategori/yatak-odasi' },
-          { label: 'Gardırop', href: '/urunler?arama=gardırop' },
-          { label: 'Şifonyer', href: '/urunler?arama=şifonyer' },
+          { label: 'Genç Odası Takımı', href: '/kategori/genc-odasi' },
+          { label: 'Karyola', href: '/urunler?arama=karyola' },
+          { label: 'Dolap', href: '/urunler?arama=genç odası dolap' },
         ],
       },
       {
         links: [
-          { label: 'Komodin', href: '/urunler?arama=komodin' },
-          { label: 'Çamaşırlık', href: '/urunler?arama=çamaşırlık' },
-          { label: 'Puf', href: '/urunler?arama=puf' },
+          { label: 'Çalışma Masası', href: '/urunler?arama=çalışma masası' },
+          { label: 'Kitaplık', href: '/urunler?arama=kitaplık' },
+          { label: 'Ranza', href: '/urunler?arama=ranza' },
         ],
       },
     ],
     previews: [
       {
-        title: 'Yatak odasında dinginlik sağlayan doğal ton ve doku önerileri',
-        href: '/blog/yatak-odasinda-huzurlu-bir-atmosfer-nasil-kurulur',
-        image: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=1200&q=85',
+        title: 'Genç odalarında ders ve dinlenme alanını birlikte planlayan fikirler',
+        href: '/kategori/genc-odasi',
+        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=85&hue=30',
       },
       {
-        title: 'Gardırop ve komodin planında hareket alanını koruyan çözümler',
-        href: '/kategori/yatak-odasi',
-        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=85',
+        title: 'Çocuk ve genç odalarında depolamayı artıran modüler çözümler',
+        href: '/kategori/genc-odasi',
+        image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1200&q=85&sat=10',
+      },
+    ],
+  },
+  {
+    label: 'Baza Başlık',
+    href: '/kategori/baza-baslik',
+    columns: [
+      {
+        links: [
+          { label: 'Baza', href: '/urunler?arama=baza' },
+          { label: 'Başlık', href: '/urunler?arama=başlık' },
+          { label: 'Sandıklı Baza', href: '/urunler?arama=sandıklı baza' },
+        ],
+      },
+      {
+        links: [
+          { label: 'Baza Başlık Seti', href: '/urunler?arama=baza başlık seti' },
+          { label: 'Premium Başlıklar', href: '/urunler?arama=premium başlık' },
+        ],
+      },
+    ],
+    previews: [
+      {
+        title: 'Bazalı sistemlerle depolamayı büyüten pratik yatak çözümleri',
+        href: '/kategori/baza-baslik',
+        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=85&sat=-20',
+      },
+      {
+        title: 'Başlık seçimiyle yatak odasında güçlü bir odak noktası oluşturun',
+        href: '/urunler?arama=başlık',
+        image: 'https://images.unsplash.com/photo-1505693534990-82e6846fbe7b?w=1200&q=85',
       },
     ],
   },
   {
     label: 'Yatak',
-    href: '/urunler?arama=yatak',
+    href: '/kategori/yatak',
     columns: [
       {
         links: [
@@ -165,7 +228,7 @@ const megaMenuItems: MenuItem[] = [
     previews: [
       {
         title: 'Doğru yatak ölçüsüyle uyku alanında konforu artırın',
-        href: '/urunler?arama=yatak',
+        href: '/kategori/yatak',
         image: 'https://images.unsplash.com/photo-1549187774-b4e9b0445b41?w=1200&q=85',
       },
       {
@@ -176,102 +239,8 @@ const megaMenuItems: MenuItem[] = [
     ],
   },
   {
-    label: 'Baza ve Başlık',
-    href: '/urunler?arama=baza',
-    columns: [
-      {
-        links: [
-          { label: 'Baza', href: '/urunler?arama=baza' },
-          { label: 'Başlık', href: '/urunler?arama=başlık' },
-          { label: 'Sandıklı Baza', href: '/urunler?arama=sandıklı baza' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Setler', href: '/urunler?arama=baza başlık seti' },
-          { label: 'Premium Başlıklar', href: '/urunler?arama=premium başlık' },
-        ],
-      },
-    ],
-    previews: [
-      {
-        title: 'Bazalı sistemlerle depolamayı büyüten pratik yatak çözümleri',
-        href: '/urunler?arama=baza',
-        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=85&sat=-20',
-      },
-      {
-        title: 'Başlık seçimiyle yatak odasında güçlü bir odak noktası oluşturun',
-        href: '/urunler?arama=başlık',
-        image: 'https://images.unsplash.com/photo-1505693534990-82e6846fbe7b?w=1200&q=85',
-      },
-    ],
-  },
-  {
-    label: 'Genç ve Çocuk Odası',
-    href: '/kategori/genc-odasi',
-    columns: [
-      {
-        links: [
-          { label: 'Genç Odası Takımı', href: '/kategori/genc-odasi' },
-          { label: 'Ranza', href: '/urunler?arama=ranza' },
-          { label: 'Çalışma Masası', href: '/kategori/calisma-odasi' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Kitaplık', href: '/urunler?arama=kitaplık' },
-          { label: 'Dolap', href: '/urunler?arama=genç odası dolap' },
-          { label: 'Karyola', href: '/urunler?arama=karyola' },
-        ],
-      },
-    ],
-    previews: [
-      {
-        title: 'Genç odalarında ders ve dinlenme alanını birlikte planlayan fikirler',
-        href: '/kategori/genc-odasi',
-        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=85&hue=30',
-      },
-      {
-        title: 'Çocuk ve genç odalarında depolamayı artıran modüler çözümler',
-        href: '/kategori/genc-odasi',
-        image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1200&q=85&sat=10',
-      },
-    ],
-  },
-  {
-    label: 'Bahçe Mobilyası',
-    href: '/urunler?arama=bahçe mobilyası',
-    columns: [
-      {
-        links: [
-          { label: 'Bahçe Oturma Grubu', href: '/urunler?arama=bahçe oturma grubu' },
-          { label: 'Dış Mekan Masa', href: '/urunler?arama=dış mekan masa' },
-          { label: 'Balkon Takımı', href: '/urunler?arama=balkon takımı' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Salıncak', href: '/urunler?arama=salıncak' },
-          { label: 'Şezlong', href: '/urunler?arama=şezlong' },
-        ],
-      },
-    ],
-    previews: [
-      {
-        title: 'Bahçe oturma gruplarında dayanıklılık ve konforu bir araya getirin',
-        href: '/urunler?arama=bahçe mobilyası',
-        image: 'https://images.unsplash.com/photo-1494526585095-c41746248156?w=1200&q=85',
-      },
-      {
-        title: 'Balkon ve teras için kompakt dış mekan yerleşim önerileri',
-        href: '/urunler?arama=balkon takımı',
-        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=85&blend=85C1AE&bm=multiply',
-      },
-    ],
-  },
-  {
     label: 'Tamamlayıcı Ürünler',
-    href: '/kategori/aksesuar',
+    href: '/kategori/tamamlayici-urunler',
     columns: [
       {
         links: [
@@ -291,44 +260,13 @@ const megaMenuItems: MenuItem[] = [
     previews: [
       {
         title: 'Tamamlayıcı parçalarla yaşam alanında derinlik oluşturan dokunuşlar',
-        href: '/kategori/aksesuar',
+        href: '/kategori/tamamlayici-urunler',
         image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1200&q=85',
       },
       {
         title: 'Ayna, sehpa ve lambader ile boş köşeleri odak alanına dönüştürün',
-        href: '/kategori/aksesuar',
+        href: '/kategori/tamamlayici-urunler',
         image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200&q=85',
-      },
-    ],
-  },
-  {
-    label: 'Online Özel',
-    href: '/urunler?one-cikan=1',
-    columns: [
-      {
-        links: [
-          { label: 'Online Fırsatlar', href: '/urunler?one-cikan=1' },
-          { label: 'Kampanyalı Ürünler', href: '/urunler?indirim=1' },
-          { label: 'Yeni Gelenler', href: '/urunler?siralama=yeni' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Blog Yazıları', href: '/blog' },
-          { label: 'Bayilik Bilgileri', href: '/bayilik' },
-        ],
-      },
-    ],
-    previews: [
-      {
-        title: 'Online özel fırsatlarda öne çıkan salon ürünlerini keşfedin',
-        href: '/urunler?one-cikan=1',
-        image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200&q=85',
-      },
-      {
-        title: 'Kampanyalı ürünlerde fiyat ve stil dengesini yakalayan seçimler',
-        href: '/urunler?indirim=1',
-        image: 'https://images.unsplash.com/photo-1460317442991-0ec209397118?w=1200&q=85',
       },
     ],
   },
@@ -505,14 +443,7 @@ export default function Header({ announcement }: { announcement?: string }) {
                       isCurrent ? 'text-charcoal' : 'text-charcoal/85 hover:text-charcoal'
                     }`}
                   >
-                    {item.label === 'Online Özel' ? (
-                      <span className="inline-flex items-center gap-2 text-[#111827]">
-                        <Zap className="w-4 h-4 fill-[#f2b300] text-[#f2b300]" />
-                        {item.label}
-                      </span>
-                    ) : (
-                      item.label
-                    )}
+                    {item.label}
                     <span
                       className={`absolute bottom-0 left-0 h-[2px] bg-[#d9b400] transition-all duration-200 ${
                         isCurrent ? 'w-full opacity-100' : 'w-0 opacity-0'
@@ -791,7 +722,7 @@ export default function Header({ announcement }: { announcement?: string }) {
                 </button>
               </form>
               <div className="mt-5 flex flex-wrap gap-2">
-                {['Kanepe', 'Yatak Odası', 'Yemek Masası', 'Çalışma Masası'].map((term) => (
+                {['Kanepe', 'Yatak Odası', 'Yemek Odası', 'Genç Odası'].map((term) => (
                   <button
                     key={term}
                     onClick={() => {
