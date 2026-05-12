@@ -18,6 +18,7 @@ import {
   SITE_LOCALE,
   SITE_NAME,
 } from '@/lib/site';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -92,7 +93,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  let announcement: string | undefined;
+  try {
+    const supabase = createServerSupabaseClient();
+    const { data } = await supabase.from('app_settings').select('value').eq('key', 'announcement').single();
+    if (data?.value && typeof (data.value as any).text === 'string') {
+      announcement = (data.value as any).text;
+    }
+  } catch {
+    // DB not set up yet — use Header's built-in default
+  }
+
   return (
     <html lang="tr">
       <body className={`${inter.variable} ${playfair.variable} bg-cream text-charcoal antialiased`}>
@@ -111,7 +123,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               __html: JSON.stringify(buildWebsiteSchema()),
             }}
           />
-          <Header />
+          <Header announcement={announcement} />
           <CartDrawer />
           <SupportWidget />
           <main>{children}</main>
