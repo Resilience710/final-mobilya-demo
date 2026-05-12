@@ -18,17 +18,17 @@ export default function CategoryGrid() {
         <h2 className="text-center font-serif text-3xl sm:text-4xl text-charcoal mb-12 tracking-wide">
           EN İYİYİ KEŞFEDİN
         </h2>
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-x-4 gap-y-10">
+        <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-7 gap-x-2 gap-y-8 sm:gap-x-4 sm:gap-y-10">
           {categories.map(cat => (
             <Link
               key={cat.label}
               href={cat.href}
               className="group flex flex-col items-center gap-3 text-center"
             >
-              <span className="w-16 h-16 flex items-center justify-center text-charcoal/80 group-hover:text-gold transition-colors duration-300">
-                <cat.icon className="w-12 h-12 stroke-[1.2]" />
+              <span className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center text-charcoal/80 group-hover:text-gold transition-colors duration-300">
+                <cat.icon className="w-8 h-8 sm:w-12 sm:h-12 stroke-[1.2]" />
               </span>
-              <span className="text-[11px] font-semibold tracking-[0.22em] text-charcoal/70 group-hover:text-gold transition-colors duration-300">
+              <span className="text-[9px] sm:text-[11px] font-semibold tracking-[0.08em] sm:tracking-[0.22em] text-charcoal/70 group-hover:text-gold transition-colors duration-300 text-center leading-tight">
                 {cat.label}
               </span>
             </Link>

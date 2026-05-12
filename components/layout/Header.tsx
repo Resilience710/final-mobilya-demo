@@ -384,8 +384,8 @@ export default function Header() {
 
   return (
     <>
-      <div className="bg-charcoal text-center py-2.5 px-4">
-        <p className="text-[10px] font-medium tracking-[0.18em] uppercase text-stone/70">
+      <div className="bg-charcoal text-center py-2 px-4">
+        <p className="text-[9px] sm:text-[10px] font-medium tracking-[0.08em] sm:tracking-[0.18em] uppercase text-stone/70 leading-snug">
           5.000 ₺ üzeri siparişlerde ücretsiz kargo · Tüm Türkiye&apos;ye teslimat
         </p>
       </div>
@@ -393,15 +393,15 @@ export default function Header() {
       <header className="sticky top-0 z-50 border-b border-stone/35 bg-cream/98 shadow-card backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[72px]">
-            <Link href="/" className="flex-shrink-0 group">
-              <Image
-                src="/final-mobilya-logo.svg"
-                alt="Final Mobilya"
-                width={200}
-                height={50}
-                priority
-                className="h-10 w-auto transition-opacity duration-300 group-hover:opacity-85"
-              />
+            <Link href="/" className="flex-shrink-0 group transition-opacity duration-300 hover:opacity-75">
+              <span className="flex items-baseline gap-[5px] sm:gap-[7px]">
+                <span className="font-sans font-black text-[18px] sm:text-[22px] lg:text-[25px] tracking-[0.13em] text-[#7A7A7A] uppercase leading-none">
+                  FİNAL
+                </span>
+                <span className="font-serif text-[18px] sm:text-[22px] lg:text-[25px] tracking-[0.07em] text-[#8B7240] leading-none">
+                  MOBİLYA
+                </span>
+              </span>
             </Link>
 
             <nav className="hidden xl:flex items-center gap-6">
@@ -617,13 +617,14 @@ export default function Header() {
               className="safe-bottom fixed right-0 top-0 bottom-0 w-[320px] max-w-[88vw] bg-cream z-50 overflow-y-auto shadow-modal lg:hidden flex flex-col"
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-stone/20">
-                <Image
-                  src="/final-mobilya-logo.svg"
-                  alt="Final Mobilya"
-                  width={176}
-                  height={44}
-                  className="h-9 w-auto"
-                />
+                <span className="flex items-baseline gap-[5px]">
+                  <span className="font-sans font-black text-[17px] tracking-[0.13em] text-[#7A7A7A] uppercase leading-none">
+                    FİNAL
+                  </span>
+                  <span className="font-serif text-[17px] tracking-[0.07em] text-[#8B7240] leading-none">
+                    MOBİLYA
+                  </span>
+                </span>
                 <button
                   onClick={() => setMenuOpen(false)}
                   className="p-1.5 text-brown/60 hover:text-charcoal rounded-lg transition-colors"

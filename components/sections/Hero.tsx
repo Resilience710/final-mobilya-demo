@@ -96,7 +96,7 @@ export default function Hero() {
               </p>
               <Link
                 href={slide.href}
-                className="inline-block bg-white px-10 py-4 text-[11px] font-semibold tracking-[0.22em] uppercase text-charcoal hover:bg-gold hover:text-white transition-colors duration-300"
+                className="inline-block bg-white px-6 sm:px-10 py-3 sm:py-4 text-[9px] sm:text-[11px] font-semibold tracking-[0.1em] sm:tracking-[0.22em] uppercase text-charcoal hover:bg-gold hover:text-white transition-colors duration-300 max-w-[260px] sm:max-w-none text-center"
               >
                 {slide.cta}
               </Link>
