@@ -29,6 +29,22 @@ type AdminVariantForm = {
   is_active: boolean;
 };
 
+type OptionGroupKey = 'types' | 'sizes' | 'colors';
+
+type OptionValueForm = {
+  localId: string;
+  label: string;
+  price_modifier: number;
+  sku_suffix: string;
+  is_active: boolean;
+};
+
+type OptionConfigForm = {
+  types: OptionValueForm[];
+  sizes: OptionValueForm[];
+  colors: OptionValueForm[];
+};
+
 type ProductForm = {
   name: string;
   slug: string;
@@ -44,8 +60,10 @@ type ProductForm = {
   images: string[];
   tags: string[];
   specifications: Record<string, string>;
-  variants: AdminVariantForm[];
+  optionConfig: OptionConfigForm;
 };
+
+const OPTION_CONFIG_SPEC_KEY = '__option_config';
 
 function createEmptyVariant(): AdminVariantForm {
   return {
@@ -59,6 +77,24 @@ function createEmptyVariant(): AdminVariantForm {
     material: '',
     image_url: '',
     is_active: true,
+  };
+}
+
+function createEmptyOptionValue(): OptionValueForm {
+  return {
+    localId: createLocalId(),
+    label: '',
+    price_modifier: 0,
+    sku_suffix: '',
+    is_active: true,
+  };
+}
+
+function createEmptyOptionConfig(): OptionConfigForm {
+  return {
+    types: [],
+    sizes: [],
+    colors: [],
   };
 }
 
@@ -78,23 +114,95 @@ function createEmptyProduct(): ProductForm {
     images: [],
     tags: [],
     specifications: {},
-    variants: [],
+    optionConfig: createEmptyOptionConfig(),
   };
 }
 
-function mapVariantToForm(variant: ProductVariant): AdminVariantForm {
+function mapOptionValue(label: string, price_modifier = 0): OptionValueForm {
   return {
-    localId: variant.id,
-    id: variant.id,
-    name: variant.name || '',
-    sku: variant.sku || '',
-    price_modifier: variant.price_modifier || 0,
-    stock_quantity: variant.stock_quantity || 0,
-    color: variant.color || '',
-    size: variant.size || '',
-    material: variant.material || '',
-    image_url: variant.image_url || '',
-    is_active: variant.is_active,
+    localId: createLocalId(),
+    label,
+    price_modifier,
+    sku_suffix: '',
+    is_active: true,
+  };
+}
+
+function splitSpecifications(specifications: Record<string, string> | null | undefined) {
+  const source = specifications || {};
+  const visible = Object.fromEntries(
+    Object.entries(source).filter(([key]) => !key.startsWith('__')),
+  );
+
+  let optionConfig = createEmptyOptionConfig();
+  const rawConfig = source[OPTION_CONFIG_SPEC_KEY];
+
+  if (rawConfig) {
+    try {
+      const parsed = JSON.parse(rawConfig) as Partial<OptionConfigForm>;
+      optionConfig = {
+        types: Array.isArray(parsed.types)
+          ? parsed.types.map((item) => ({
+              localId: createLocalId(),
+              label: item?.label || '',
+              price_modifier: Number(item?.price_modifier) || 0,
+              sku_suffix: item?.sku_suffix || '',
+              is_active: item?.is_active ?? true,
+            }))
+          : [],
+        sizes: Array.isArray(parsed.sizes)
+          ? parsed.sizes.map((item) => ({
+              localId: createLocalId(),
+              label: item?.label || '',
+              price_modifier: Number(item?.price_modifier) || 0,
+              sku_suffix: item?.sku_suffix || '',
+              is_active: item?.is_active ?? true,
+            }))
+          : [],
+        colors: Array.isArray(parsed.colors)
+          ? parsed.colors.map((item) => ({
+              localId: createLocalId(),
+              label: item?.label || '',
+              price_modifier: Number(item?.price_modifier) || 0,
+              sku_suffix: item?.sku_suffix || '',
+              is_active: item?.is_active ?? true,
+            }))
+          : [],
+      };
+    } catch {
+      optionConfig = createEmptyOptionConfig();
+    }
+  }
+
+  return { visible, optionConfig };
+}
+
+function inferOptionConfigFromVariants(variants: ProductVariant[] | undefined): OptionConfigForm {
+  const list = variants || [];
+  const materials = Array.from(new Set(list.map((variant) => variant.material?.trim()).filter(Boolean))) as string[];
+  const sizes = Array.from(new Set(list.map((variant) => variant.size?.trim()).filter(Boolean))) as string[];
+  const colors = Array.from(new Set(list.map((variant) => variant.color?.trim()).filter(Boolean))) as string[];
+
+  const inferModifiers = (kind: 'material' | 'size' | 'color', labels: string[]) => {
+    const otherCounts = {
+      material: { size: sizes.length, color: colors.length },
+      size: { material: materials.length, color: colors.length },
+      color: { material: materials.length, size: sizes.length },
+    }[kind];
+
+    const canInfer =
+      Object.values(otherCounts).every((count) => count <= 1);
+
+    return labels.map((label) => {
+      const matched = list.find((variant) => (variant[kind]?.trim() || '') === label);
+      return mapOptionValue(label, canInfer ? Number(matched?.price_modifier) || 0 : 0);
+    });
+  };
+
+  return {
+    types: inferModifiers('material', materials),
+    sizes: inferModifiers('size', sizes),
+    colors: inferModifiers('color', colors),
   };
 }
 
@@ -108,7 +216,6 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState<ProductForm>(createEmptyProduct());
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadingVariantId, setUploadingVariantId] = useState<string | null>(null);
   const [specKey, setSpecKey] = useState('');
   const [specValue, setSpecValue] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -137,6 +244,7 @@ export default function AdminProductsPage() {
   const openEdit = (product: Product) => {
     setEditingProduct(product);
     setError(null);
+    const { visible, optionConfig } = splitSpecifications(product.specifications || {});
     setForm({
       name: product.name,
       slug: product.slug,
@@ -151,8 +259,11 @@ export default function AdminProductsPage() {
       sku: product.sku || '',
       images: product.images || [],
       tags: product.tags || [],
-      specifications: product.specifications || {},
-      variants: (product.variants || []).map(mapVariantToForm),
+      specifications: visible,
+      optionConfig:
+        optionConfig.types.length || optionConfig.sizes.length || optionConfig.colors.length
+          ? optionConfig
+          : inferOptionConfigFromVariants(product.variants),
     });
     setShowForm(true);
   };
@@ -218,33 +329,6 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleVariantImageUpload = async (variantLocalId: string, e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingVariantId(variantLocalId);
-    setError(null);
-
-    try {
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error('Dosya boyutu 5MB üzerinde.');
-      }
-
-      const publicUrl = await uploadImage(file, 'variants');
-      setForm((current) => ({
-        ...current,
-        variants: current.variants.map((variant) =>
-          variant.localId === variantLocalId ? { ...variant, image_url: publicUrl } : variant
-        ),
-      }));
-    } catch (err: any) {
-      setError(`Varyant görseli yüklenemedi: ${err?.message || 'Bilinmeyen hata'}`);
-    } finally {
-      setUploadingVariantId(null);
-      e.target.value = '';
-    }
-  };
-
   const addTag = () => {
     const t = tagInput.trim();
     if (!t || form.tags.includes(t)) return;
@@ -274,23 +358,40 @@ export default function AdminProductsPage() {
     setForm({ ...form, specifications: specs });
   };
 
-  const addVariant = () => {
-    setForm((current) => ({ ...current, variants: [...current.variants, createEmptyVariant()] }));
-  };
-
-  const updateVariant = (localId: string, field: keyof AdminVariantForm, value: string | number | boolean) => {
+  const addOptionValue = (group: OptionGroupKey) => {
     setForm((current) => ({
       ...current,
-      variants: current.variants.map((variant) =>
-        variant.localId === localId ? { ...variant, [field]: value } : variant
-      ),
+      optionConfig: {
+        ...current.optionConfig,
+        [group]: [...current.optionConfig[group], createEmptyOptionValue()],
+      },
     }));
   };
 
-  const removeVariant = (localId: string) => {
+  const updateOptionValue = (
+    group: OptionGroupKey,
+    localId: string,
+    field: keyof OptionValueForm,
+    value: string | number | boolean,
+  ) => {
     setForm((current) => ({
       ...current,
-      variants: current.variants.filter((variant) => variant.localId !== localId),
+      optionConfig: {
+        ...current.optionConfig,
+        [group]: current.optionConfig[group].map((item) =>
+          item.localId === localId ? { ...item, [field]: value } : item
+        ),
+      },
+    }));
+  };
+
+  const removeOptionValue = (group: OptionGroupKey, localId: string) => {
+    setForm((current) => ({
+      ...current,
+      optionConfig: {
+        ...current.optionConfig,
+        [group]: current.optionConfig[group].filter((item) => item.localId !== localId),
+      },
     }));
   };
 
@@ -311,6 +412,42 @@ export default function AdminProductsPage() {
       return;
     }
 
+    const cleanOptionConfig: OptionConfigForm = {
+      types: form.optionConfig.types
+        .map((item) => ({
+          ...item,
+          label: item.label.trim(),
+          sku_suffix: item.sku_suffix.trim(),
+        }))
+        .filter((item) => item.label),
+      sizes: form.optionConfig.sizes
+        .map((item) => ({
+          ...item,
+          label: item.label.trim(),
+          sku_suffix: item.sku_suffix.trim(),
+        }))
+        .filter((item) => item.label),
+      colors: form.optionConfig.colors
+        .map((item) => ({
+          ...item,
+          label: item.label.trim(),
+          sku_suffix: item.sku_suffix.trim(),
+        }))
+        .filter((item) => item.label),
+    };
+
+    const specifications = { ...form.specifications };
+    const hasOptionConfig =
+      cleanOptionConfig.types.length > 0 ||
+      cleanOptionConfig.sizes.length > 0 ||
+      cleanOptionConfig.colors.length > 0;
+
+    if (hasOptionConfig) {
+      specifications[OPTION_CONFIG_SPEC_KEY] = JSON.stringify(cleanOptionConfig);
+    } else {
+      delete specifications[OPTION_CONFIG_SPEC_KEY];
+    }
+
     const productData = {
       name: form.name,
       slug: form.slug || generateSlug(form.name),
@@ -325,7 +462,7 @@ export default function AdminProductsPage() {
       sku: form.sku || null,
       images: form.images,
       tags: form.tags,
-      specifications: form.specifications,
+      specifications,
     };
 
     const productResult = editingProduct
@@ -339,34 +476,76 @@ export default function AdminProductsPage() {
     }
 
     const productId = productResult.data.id;
-    const existingVariantIds = new Set((editingProduct?.variants || []).map((variant) => variant.id));
-    const nextVariants = form.variants
-      .map((variant) => {
-        const material = variant.material.trim();
-        const size = variant.size.trim();
-        const color = variant.color.trim();
-        const name = variant.name.trim() || [material, size, color].filter(Boolean).join(' - ') || 'Standart Varyant';
+    const variantKey = (material?: string | null, size?: string | null, color?: string | null) =>
+      `${material?.trim() || ''}__${size?.trim() || ''}__${color?.trim() || ''}`;
+    const existingVariantMap = new Map(
+      (editingProduct?.variants || []).map((variant) => [
+        variantKey(variant.material, variant.size, variant.color),
+        variant,
+      ]),
+    );
 
-        if (!name && !material && !size && !color && !variant.sku.trim() && !variant.image_url) {
-          return null;
+    const activeTypes = cleanOptionConfig.types.filter((item) => item.is_active);
+    const activeSizes = cleanOptionConfig.sizes.filter((item) => item.is_active);
+    const activeColors = cleanOptionConfig.colors.filter((item) => item.is_active);
+
+    const typeOptions = activeTypes.length > 0 ? activeTypes : [null];
+    const sizeOptions = activeSizes.length > 0 ? activeSizes : [null];
+    const colorOptions = activeColors.length > 0 ? activeColors : [null];
+
+    const nextVariants: Array<{
+      id?: string;
+      name: string;
+      sku: string | null;
+      price_modifier: number;
+      stock_quantity: number;
+      color: string | null;
+      material: string | null;
+      size: string | null;
+      image_url: string | null;
+      is_active: boolean;
+      key: string;
+    }> = [];
+
+    for (const typeOption of typeOptions) {
+      for (const sizeOption of sizeOptions) {
+        for (const colorOption of colorOptions) {
+          const material = typeOption?.label || null;
+          const size = sizeOption?.label || null;
+          const color = colorOption?.label || null;
+          const key = variantKey(material, size, color);
+          const existingVariant = existingVariantMap.get(key);
+          const name = [material, size, color].filter(Boolean).join(' - ') || 'Standart Varyant';
+          const priceModifier =
+            (Number(typeOption?.price_modifier) || 0) +
+            (Number(sizeOption?.price_modifier) || 0) +
+            (Number(colorOption?.price_modifier) || 0);
+          const skuParts = [
+            form.sku.trim() || null,
+            typeOption?.sku_suffix || null,
+            sizeOption?.sku_suffix || null,
+            colorOption?.sku_suffix || null,
+          ].filter(Boolean);
+
+          nextVariants.push({
+            id: existingVariant?.id,
+            key,
+            name,
+            sku: skuParts.length > 0 ? skuParts.join('-') : null,
+            price_modifier: priceModifier,
+            stock_quantity: Number(form.stock_quantity) || 0,
+            color,
+            material,
+            size,
+            image_url: existingVariant?.image_url || null,
+            is_active: true,
+          });
         }
-
-        return {
-          id: variant.id,
-          name,
-          sku: variant.sku.trim() || null,
-          price_modifier: Number(variant.price_modifier) || 0,
-          stock_quantity: Number(variant.stock_quantity) || 0,
-          color: color || null,
-          material: material || null,
-          size: size || null,
-          image_url: variant.image_url || null,
-          is_active: variant.is_active,
-        };
-      })
-      .filter((variant): variant is NonNullable<typeof variant> => Boolean(variant));
+      }
+    }
 
     const keptVariantIds = new Set(nextVariants.map((variant) => variant.id).filter(Boolean) as string[]);
+    const existingVariantIds = new Set((editingProduct?.variants || []).map((variant) => variant.id));
     const removedVariantIds = Array.from(existingVariantIds).filter((variantId) => !keptVariantIds.has(variantId));
 
     if (removedVariantIds.length) {
@@ -696,156 +875,122 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div className="rounded-2xl border border-stone/15 bg-stone-50/70 p-4">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold text-charcoal">Seçenekler</h3>
-                      <p className="mt-1 text-xs text-brown/50">Ürün tipi, ölçü, renk ve varyanta özel görsel ekleyebilirsiniz.</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={addVariant}
-                      className="inline-flex items-center gap-2 rounded-xl bg-charcoal px-3 py-2 text-sm text-white transition-colors hover:bg-gold"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Seçenek Ekle
-                    </button>
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-charcoal">Seçenek Grupları</h3>
+                    <p className="mt-1 text-xs text-brown/50">
+                      Ürün tipi, ölçü ve renkleri ayrı ayrı tanımlayın. Sistem tüm kombinasyon varyantlarını otomatik oluşturur.
+                    </p>
                   </div>
 
-                  {form.variants.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-stone/25 bg-white px-4 py-5 text-sm text-brown/50">
-                      Henüz seçenek eklenmedi. Ürün tek tip satılacaksa boş bırakabilirsiniz.
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {form.variants.map((variant, index) => (
-                        <div key={variant.localId} className="rounded-2xl border border-stone/15 bg-white p-4">
+                  <div className="space-y-5">
+                    {[
+                      {
+                        key: 'types' as const,
+                        title: 'Ürün Tipleri',
+                        description: 'Örn: Kadife, Keten, Deri',
+                        placeholder: 'Kadife',
+                      },
+                      {
+                        key: 'sizes' as const,
+                        title: 'Ölçüler',
+                        description: 'Örn: 90x200, 90x400',
+                        placeholder: '90x200',
+                      },
+                      {
+                        key: 'colors' as const,
+                        title: 'Renkler',
+                        description: 'Örn: Gri, Lacivert, Bej',
+                        placeholder: 'Gri',
+                      },
+                    ].map((group) => {
+                      const values = form.optionConfig[group.key];
+
+                      return (
+                        <div key={group.key} className="rounded-2xl border border-stone/15 bg-white p-4">
                           <div className="mb-4 flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-sm font-semibold text-charcoal">Seçenek {index + 1}</p>
-                              <p className="text-xs text-brown/45">Ürün tipi, ölçü, renk ve fiyat farkı tanımlayın.</p>
+                              <p className="text-sm font-semibold text-charcoal">{group.title}</p>
+                              <p className="text-xs text-brown/45">{group.description}</p>
                             </div>
                             <button
                               type="button"
-                              onClick={() => removeVariant(variant.localId)}
-                              className="rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50"
+                              onClick={() => addOptionValue(group.key)}
+                              className="inline-flex items-center gap-2 rounded-xl bg-charcoal px-3 py-2 text-sm text-white transition-colors hover:bg-gold"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Plus className="h-4 w-4" />
+                              Ekle
                             </button>
                           </div>
 
-                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <div>
-                              <label className="mb-1 block text-sm font-medium text-charcoal">Ürün Tipi</label>
-                              <input
-                                type="text"
-                                value={variant.material}
-                                onChange={(e) => updateVariant(variant.localId, 'material', e.target.value)}
-                                placeholder="Örn: Sabit Masa, Açılır Masa"
-                                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-                              />
+                          {values.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-stone/25 bg-stone-50 px-4 py-4 text-sm text-brown/50">
+                              Bu grup için henüz seçenek eklenmedi.
                             </div>
-                            <div>
-                              <label className="mb-1 block text-sm font-medium text-charcoal">Renk</label>
-                              <input
-                                type="text"
-                                value={variant.color}
-                                onChange={(e) => updateVariant(variant.localId, 'color', e.target.value)}
-                                placeholder="Örn: Krem, Ceviz"
-                                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-                              />
-                            </div>
-                            <div>
-                              <label className="mb-1 block text-sm font-medium text-charcoal">Ölçü</label>
-                              <input
-                                type="text"
-                                value={variant.size}
-                                onChange={(e) => updateVariant(variant.localId, 'size', e.target.value)}
-                                placeholder="Örn: 240 cm, 3+2+1, 90x190"
-                                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-                              />
-                            </div>
-                            <div>
-                              <label className="mb-1 block text-sm font-medium text-charcoal">Varyant Adı</label>
-                              <input
-                                type="text"
-                                value={variant.name}
-                                onChange={(e) => updateVariant(variant.localId, 'name', e.target.value)}
-                                placeholder="Boş kalırsa ürün tipi + ölçü + renk ile oluşur"
-                                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-                              />
-                            </div>
-                            <div>
-                              <label className="mb-1 block text-sm font-medium text-charcoal">Varyant SKU</label>
-                              <input
-                                type="text"
-                                value={variant.sku}
-                                onChange={(e) => updateVariant(variant.localId, 'sku', e.target.value)}
-                                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-                              />
-                            </div>
-                            <div>
-                              <label className="mb-1 block text-sm font-medium text-charcoal">Fiyat Farkı (₺)</label>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={variant.price_modifier}
-                                onChange={(e) => updateVariant(variant.localId, 'price_modifier', parseFloat(e.target.value) || 0)}
-                                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-                              />
-                            </div>
-                            <div>
-                              <label className="mb-1 block text-sm font-medium text-charcoal">Varyant Stok</label>
-                              <input
-                                type="number"
-                                min="0"
-                                value={variant.stock_quantity}
-                                onChange={(e) => updateVariant(variant.localId, 'stock_quantity', parseInt(e.target.value) || 0)}
-                                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-                              />
-                            </div>
-                          </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {values.map((value, index) => (
+                                <div key={value.localId} className="rounded-xl border border-stone/15 bg-stone-50/70 p-4">
+                                  <div className="mb-3 flex items-center justify-between gap-3">
+                                    <p className="text-sm font-medium text-charcoal">{group.title} {index + 1}</p>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeOptionValue(group.key, value.localId)}
+                                      className="rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
 
-                          <div className="mt-4 flex flex-wrap items-center gap-4">
-                            <label className="flex items-center gap-2 text-sm">
-                              <input
-                                type="checkbox"
-                                checked={variant.is_active}
-                                onChange={(e) => updateVariant(variant.localId, 'is_active', e.target.checked)}
-                                className="rounded"
-                              />
-                              Aktif
-                            </label>
+                                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    <div>
+                                      <label className="mb-1 block text-sm font-medium text-charcoal">Ad</label>
+                                      <input
+                                        type="text"
+                                        value={value.label}
+                                        onChange={(e) => updateOptionValue(group.key, value.localId, 'label', e.target.value)}
+                                        placeholder={group.placeholder}
+                                        className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="mb-1 block text-sm font-medium text-charcoal">Ek Fiyat (₺)</label>
+                                      <input
+                                        type="number"
+                                        step="0.01"
+                                        value={value.price_modifier}
+                                        onChange={(e) => updateOptionValue(group.key, value.localId, 'price_modifier', parseFloat(e.target.value) || 0)}
+                                        className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="mb-1 block text-sm font-medium text-charcoal">SKU Eki</label>
+                                      <input
+                                        type="text"
+                                        value={value.sku_suffix}
+                                        onChange={(e) => updateOptionValue(group.key, value.localId, 'sku_suffix', e.target.value)}
+                                        placeholder="90X200"
+                                        className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                                      />
+                                    </div>
+                                  </div>
 
-                            <div className="flex items-center gap-3">
-                              {variant.image_url ? (
-                                <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-stone/20">
-                                  <Image src={variant.image_url} alt={variant.name || `Varyant ${index + 1}`} fill className="object-cover" sizes="64px" />
-                                  <button
-                                    type="button"
-                                    onClick={() => updateVariant(variant.localId, 'image_url', '')}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity hover:opacity-100"
-                                  >
-                                    <X className="h-4 w-4 text-white" />
-                                  </button>
+                                  <label className="mt-3 flex items-center gap-2 text-sm">
+                                    <input
+                                      type="checkbox"
+                                      checked={value.is_active}
+                                      onChange={(e) => updateOptionValue(group.key, value.localId, 'is_active', e.target.checked)}
+                                      className="rounded"
+                                    />
+                                    Aktif
+                                  </label>
                                 </div>
-                              ) : null}
-                              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-sm text-charcoal transition-colors hover:border-gold">
-                                {uploadingVariantId === variant.localId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                                Varyant Görseli Yükle
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => handleVariantImageUpload(variant.localId, e)}
-                                  className="hidden"
-                                />
-                              </label>
+                              ))}
                             </div>
-                          </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div>

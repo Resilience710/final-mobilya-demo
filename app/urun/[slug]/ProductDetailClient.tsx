@@ -18,6 +18,21 @@ interface Props {
   relatedProducts: Product[];
 }
 
+type ProductOptionValue = {
+  label: string;
+  price_modifier?: number;
+  sku_suffix?: string;
+  is_active?: boolean;
+};
+
+type ProductOptionConfig = {
+  types: ProductOptionValue[];
+  sizes: ProductOptionValue[];
+  colors: ProductOptionValue[];
+};
+
+const OPTION_CONFIG_SPEC_KEY = '__option_config';
+
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
 }
@@ -47,11 +62,51 @@ function uniqueValues(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+function createEmptyOptionConfig(): ProductOptionConfig {
+  return {
+    types: [],
+    sizes: [],
+    colors: [],
+  };
+}
+
+function parseOptionConfig(specifications: Product['specifications'] | null | undefined): ProductOptionConfig {
+  const rawConfig = specifications?.[OPTION_CONFIG_SPEC_KEY];
+
+  if (!rawConfig) {
+    return createEmptyOptionConfig();
+  }
+
+  try {
+    const parsed = JSON.parse(rawConfig) as Partial<ProductOptionConfig>;
+    const normalize = (values: ProductOptionValue[] | undefined) =>
+      Array.isArray(values)
+        ? values
+            .map((value) => ({
+              label: value?.label?.trim() || '',
+              price_modifier: Number(value?.price_modifier) || 0,
+              sku_suffix: value?.sku_suffix?.trim() || '',
+              is_active: value?.is_active ?? true,
+            }))
+            .filter((value) => value.label)
+        : [];
+
+    return {
+      types: normalize(parsed.types),
+      sizes: normalize(parsed.sizes),
+      colors: normalize(parsed.colors),
+    };
+  } catch {
+    return createEmptyOptionConfig();
+  }
+}
+
 export default function ProductDetailClient({ product, relatedProducts }: Props) {
   const activeVariants = useMemo(
     () => (product.variants || []).filter((variant) => variant.is_active),
     [product.variants],
   );
+  const optionConfig = useMemo(() => parseOptionConfig(product.specifications), [product.specifications]);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(activeVariants[0] || null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -74,23 +129,54 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     [city],
   );
   const canAddToCart = product.stock_quantity > 0;
+  const activeTypeConfig = useMemo(
+    () => optionConfig.types.filter((item) => item.is_active !== false),
+    [optionConfig.types],
+  );
+  const activeSizeConfig = useMemo(
+    () => optionConfig.sizes.filter((item) => item.is_active !== false),
+    [optionConfig.sizes],
+  );
+  const activeColorConfig = useMemo(
+    () => optionConfig.colors.filter((item) => item.is_active !== false),
+    [optionConfig.colors],
+  );
+  const typeModifierMap = useMemo(
+    () => new Map(activeTypeConfig.map((item) => [item.label, Number(item.price_modifier) || 0])),
+    [activeTypeConfig],
+  );
+  const sizeModifierMap = useMemo(
+    () => new Map(activeSizeConfig.map((item) => [item.label, Number(item.price_modifier) || 0])),
+    [activeSizeConfig],
+  );
+  const colorModifierMap = useMemo(
+    () => new Map(activeColorConfig.map((item) => [item.label, Number(item.price_modifier) || 0])),
+    [activeColorConfig],
+  );
   const productTypeOptions = useMemo(
-    () => uniqueValues(activeVariants.map((variant) => getVariantTypeLabel(variant))),
-    [activeVariants],
+    () =>
+      activeTypeConfig.length > 0
+        ? activeTypeConfig.map((item) => item.label)
+        : uniqueValues(activeVariants.map((variant) => getVariantTypeLabel(variant))),
+    [activeTypeConfig, activeVariants],
   );
   const selectedType = selectedVariant ? getVariantTypeLabel(selectedVariant) : '';
   const sizeOptions = useMemo(() => uniqueValues(
-    activeVariants
-      .filter((variant) => !selectedType || getVariantTypeLabel(variant) === selectedType)
-      .map((variant) => getVariantSizeLabel(variant)),
-  ), [activeVariants, selectedType]);
+    activeSizeConfig.length > 0
+      ? activeSizeConfig.map((item) => item.label)
+      : activeVariants
+          .filter((variant) => !selectedType || getVariantTypeLabel(variant) === selectedType)
+          .map((variant) => getVariantSizeLabel(variant)),
+  ), [activeSizeConfig, activeVariants, selectedType]);
   const selectedSize = selectedVariant ? getVariantSizeLabel(selectedVariant) : sizeOptions[0] || '';
   const colorOptions = useMemo(() => uniqueValues(
-    activeVariants
-      .filter((variant) => !selectedType || getVariantTypeLabel(variant) === selectedType)
-      .filter((variant) => !selectedSize || getVariantSizeLabel(variant) === selectedSize)
-      .map((variant) => getVariantColorLabel(variant)),
-  ), [activeVariants, selectedSize, selectedType]);
+    activeColorConfig.length > 0
+      ? activeColorConfig.map((item) => item.label)
+      : activeVariants
+          .filter((variant) => !selectedType || getVariantTypeLabel(variant) === selectedType)
+          .filter((variant) => !selectedSize || getVariantSizeLabel(variant) === selectedSize)
+          .map((variant) => getVariantColorLabel(variant)),
+  ), [activeColorConfig, activeVariants, selectedSize, selectedType]);
   const selectedColor = selectedVariant ? getVariantColorLabel(selectedVariant) : colorOptions[0] || '';
   const galleryImages = useMemo(() => {
     const merged = [selectedVariant?.image_url, ...(product.images || [])]
@@ -197,7 +283,13 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     setShippingError('');
   };
 
-  const specs = product.specifications || {};
+  const specs = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(product.specifications || {}).filter(([key]) => !key.startsWith('__')),
+      ),
+    [product.specifications],
+  );
 
   return (
     <div className="min-h-screen bg-cream pt-24 pb-20">
@@ -329,24 +421,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {productTypeOptions.map((type) => {
-                          const typeVariant =
-                            activeVariants.find((variant) =>
-                              getVariantTypeLabel(variant) === type &&
-                              (!selectedSize || getVariantSizeLabel(variant) === selectedSize) &&
-                              (!selectedColor || getVariantColorLabel(variant) === selectedColor),
-                            ) ||
-                            activeVariants.find((variant) =>
-                              getVariantTypeLabel(variant) === type &&
-                              (!selectedSize || getVariantSizeLabel(variant) === selectedSize),
-                            ) ||
-                            activeVariants.find((variant) => getVariantTypeLabel(variant) === type) ||
-                            null;
-
+                          const typeModifier = typeModifierMap.get(type) || 0;
                           return (
                             <button
                               key={type}
                               onClick={() => {
-                                setSelectedVariant(findBestVariant({ type, size: selectedSize, color: selectedColor }) || typeVariant);
+                                setSelectedVariant(findBestVariant({ type, size: selectedSize, color: selectedColor }));
                               }}
                               className={`rounded-xl border px-4 py-2.5 text-sm transition-all ${
                                 selectedType === type
@@ -355,8 +435,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                               }`}
                             >
                               {type}
-                              {(typeVariant?.price_modifier || 0) > 0 && (
-                                <span className="ml-1 text-xs opacity-70">+{formatPrice(typeVariant?.price_modifier || 0)}</span>
+                              {typeModifier > 0 && (
+                                <span className="ml-1 text-xs opacity-70">+{formatPrice(typeModifier)}</span>
                               )}
                             </button>
                           );
@@ -372,23 +452,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {sizeOptions.map((size) => {
-                          const sizeVariant =
-                            activeVariants.find((variant) =>
-                              (!selectedType || getVariantTypeLabel(variant) === selectedType) &&
-                              getVariantSizeLabel(variant) === size &&
-                              (!selectedColor || getVariantColorLabel(variant) === selectedColor),
-                            ) ||
-                            activeVariants.find((variant) =>
-                              (!selectedType || getVariantTypeLabel(variant) === selectedType) &&
-                              getVariantSizeLabel(variant) === size,
-                            ) ||
-                            null;
-
+                          const sizeModifier = sizeModifierMap.get(size) || 0;
                           return (
                             <button
                               key={size}
                               onClick={() => {
-                                setSelectedVariant(findBestVariant({ type: selectedType, size, color: selectedColor }) || sizeVariant);
+                                setSelectedVariant(findBestVariant({ type: selectedType, size, color: selectedColor }));
                               }}
                               className={`rounded-xl border px-4 py-2.5 text-sm transition-all ${
                                 selectedSize === size
@@ -397,8 +466,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                               }`}
                             >
                               {size}
-                              {(sizeVariant?.price_modifier || 0) > 0 && (
-                                <span className="ml-1 text-xs opacity-70">+{formatPrice(sizeVariant?.price_modifier || 0)}</span>
+                              {sizeModifier > 0 && (
+                                <span className="ml-1 text-xs opacity-70">+{formatPrice(sizeModifier)}</span>
                               )}
                             </button>
                           );
@@ -414,12 +483,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {colorOptions.map((color) => {
+                          const colorModifier = colorModifierMap.get(color) || 0;
                           const colorVariant = activeVariants.find((variant) =>
                             (!selectedType || getVariantTypeLabel(variant) === selectedType) &&
                             (!selectedSize || getVariantSizeLabel(variant) === selectedSize) &&
                             getVariantColorLabel(variant) === color,
                           );
-                          const colorVariantPrice = colorVariant?.price_modifier || 0;
                           const isSelected = selectedColor === color;
 
                           return (
@@ -437,8 +506,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                               }`}
                             >
                               {color}
-                              {colorVariantPrice > 0 && (
-                                <span className="ml-1 text-xs opacity-70">+{formatPrice(colorVariantPrice)}</span>
+                              {colorModifier > 0 && (
+                                <span className="ml-1 text-xs opacity-70">+{formatPrice(colorModifier)}</span>
                               )}
                             </button>
                           );
