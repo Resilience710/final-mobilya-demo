@@ -23,21 +23,31 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function HomePage() {
-  const supabase = createServerSupabaseClient();
+  let heroSlides:      HeroSlide[]       = [];
+  let testimonials:    Testimonial[]     = [];
+  let trustFeatures:   TrustFeature[]    = [];
+  let roomCollections: RoomCollection[]  = [];
+  let brandStory:      BrandStoryContent | null = null;
 
-  const [heroRes, testimonialsRes, trustRes, roomsRes, brandStoryRes] = await Promise.allSettled([
-    supabase.from('hero_slides').select('*').eq('is_active', true).order('sort_order'),
-    supabase.from('testimonials').select('*').eq('is_active', true).order('sort_order'),
-    supabase.from('trust_features').select('*').eq('is_active', true).order('sort_order'),
-    supabase.from('room_collections').select('*').eq('is_active', true).order('sort_order'),
-    supabase.from('app_settings').select('value').eq('key', 'brand_story').single(),
-  ]);
+  try {
+    const supabase = createServerSupabaseClient();
 
-  const heroSlides      = heroRes.status         === 'fulfilled' ? (heroRes.value.data         as HeroSlide[]       ?? []) : [];
-  const testimonials    = testimonialsRes.status  === 'fulfilled' ? (testimonialsRes.value.data  as Testimonial[]     ?? []) : [];
-  const trustFeatures   = trustRes.status         === 'fulfilled' ? (trustRes.value.data         as TrustFeature[]    ?? []) : [];
-  const roomCollections = roomsRes.status         === 'fulfilled' ? (roomsRes.value.data         as RoomCollection[]  ?? []) : [];
-  const brandStory      = brandStoryRes.status    === 'fulfilled' ? (brandStoryRes.value.data?.value as BrandStoryContent ?? null) : null;
+    const [heroRes, testimonialsRes, trustRes, roomsRes, brandStoryRes] = await Promise.allSettled([
+      supabase.from('hero_slides').select('*').eq('is_active', true).order('sort_order'),
+      supabase.from('testimonials').select('*').eq('is_active', true).order('sort_order'),
+      supabase.from('trust_features').select('*').eq('is_active', true).order('sort_order'),
+      supabase.from('room_collections').select('*').eq('is_active', true).order('sort_order'),
+      supabase.from('app_settings').select('value').eq('key', 'brand_story').single(),
+    ]);
+
+    heroSlides      = heroRes.status         === 'fulfilled' ? (heroRes.value.data         as HeroSlide[]       ?? []) : [];
+    testimonials    = testimonialsRes.status  === 'fulfilled' ? (testimonialsRes.value.data  as Testimonial[]     ?? []) : [];
+    trustFeatures   = trustRes.status         === 'fulfilled' ? (trustRes.value.data         as TrustFeature[]    ?? []) : [];
+    roomCollections = roomsRes.status         === 'fulfilled' ? (roomsRes.value.data         as RoomCollection[]  ?? []) : [];
+    brandStory      = brandStoryRes.status    === 'fulfilled' ? (brandStoryRes.value.data?.value as BrandStoryContent ?? null) : null;
+  } catch {
+    // DB unavailable — components will use their built-in defaults
+  }
 
   const homeSchemas = [
     buildBreadcrumbSchema([{ name: 'Ana Sayfa', path: '/' }]),
