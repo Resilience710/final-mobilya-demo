@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Heart } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { Product, Campaign, ProductDiscount } from '@/lib/types';
+import { Product, Campaign, ProductDiscount, HomepageFeaturedTab } from '@/lib/types';
 import {
   applyCampaignToProducts,
   applyProductDiscountsToProducts,
@@ -16,32 +16,6 @@ import { getProductSticker } from '@/lib/product-stickers';
 import DiscountCountdown from '@/components/ui/DiscountCountdown';
 
 type TabKey = 'discounted' | 'bestsellers' | 'newest';
-
-const tabs: Array<{
-  key: TabKey;
-  label: string;
-  href: string;
-  cta: string;
-}> = [
-  {
-    key: 'discounted',
-    label: 'İndirimli Ürünler',
-    href: '/urunler?indirim=1',
-    cta: 'Tüm İndirimli Ürünleri Göster',
-  },
-  {
-    key: 'bestsellers',
-    label: 'En Çok Satanlar',
-    href: '/urunler?one-cikan=1',
-    cta: 'Tüm Çok Satanları Göster',
-  },
-  {
-    key: 'newest',
-    label: 'Yeni Ürünler',
-    href: '/urunler?siralama=yeni',
-    cta: 'Tüm Yeni Ürünleri Göster',
-  },
-];
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat('tr-TR', {
@@ -77,7 +51,11 @@ function completeUniqueProducts(selection: Product[], source: Product[], usedIds
   return selection;
 }
 
-export default function FeaturedProducts() {
+interface FeaturedProductsProps {
+  tabs: HomepageFeaturedTab[];
+}
+
+export default function FeaturedProducts({ tabs }: FeaturedProductsProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('discounted');

@@ -125,6 +125,121 @@ export interface HomepageGalleryItem {
   updated_at?: string;
 }
 
+export type HomepageFeaturedTabKey = 'discounted' | 'bestsellers' | 'newest';
+
+export interface HomepageHeroSlide {
+  image: string;
+  imageAlt: string;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+  href: string;
+}
+
+export interface HomepageCategoryItem {
+  label: string;
+  href: string;
+}
+
+export interface HomepageCategoriesSection {
+  heading: string;
+  items: HomepageCategoryItem[];
+}
+
+export interface HomepageBrandStoryCard {
+  image: string;
+  imageAlt: string;
+  headline: string;
+  ctaLabel: string;
+  href: string;
+}
+
+export interface HomepageBrandStorySection {
+  leftBadgeLabel: string;
+  leftBadgeYear: string;
+  leftCard: HomepageBrandStoryCard;
+  centerTitle: string;
+  centerSubtitle: string;
+  centerCtaLabel: string;
+  centerCtaHref: string;
+  rightCard: HomepageBrandStoryCard;
+}
+
+export interface HomepageFeaturedTab {
+  key: HomepageFeaturedTabKey;
+  label: string;
+  href: string;
+  cta: string;
+}
+
+export interface HomepageFeaturedProductsSection {
+  tabs: HomepageFeaturedTab[];
+}
+
+export interface HomepageShopTheLookSection {
+  backgroundImage: string;
+  backgroundImageAlt: string;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+  ctaHref: string;
+}
+
+export interface HomepageRoomShowcaseItem {
+  label: string;
+  href: string;
+  image: string;
+  imageAlt: string;
+  ctaLabel: string;
+}
+
+export interface HomepageRoomShowcaseSection {
+  items: HomepageRoomShowcaseItem[];
+}
+
+export interface HomepageCollectionSection {
+  eyebrow: string;
+  heading: string;
+  description: string;
+  ctaLabel: string;
+  ctaHref: string;
+}
+
+export interface HomepageTestimonialsItem {
+  text: string;
+  name: string;
+}
+
+export interface HomepageTestimonialsSection {
+  heading: string;
+  items: HomepageTestimonialsItem[];
+}
+
+export interface HomepageTrustItem {
+  title: string;
+  description: string;
+}
+
+export interface HomepageTrustBarSection {
+  heading: string;
+  items: HomepageTrustItem[];
+}
+
+export interface HomepageContent {
+  hero: {
+    slides: HomepageHeroSlide[];
+  };
+  categories: HomepageCategoriesSection;
+  brandStory: HomepageBrandStorySection;
+  featuredProducts: HomepageFeaturedProductsSection;
+  shopTheLook: HomepageShopTheLookSection;
+  roomShowcase: HomepageRoomShowcaseSection;
+  allProducts: HomepageCollectionSection;
+  blogHighlights: HomepageCollectionSection;
+  testimonials: HomepageTestimonialsSection;
+  trustBar: HomepageTrustBarSection;
+}
+
 export interface ProductVariant {
   id: string;
   product_id: string;

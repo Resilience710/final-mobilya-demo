@@ -3,26 +3,31 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import AnimatedSection from '@/components/ui/AnimatedSection';
 import { blogPosts } from '@/lib/blog';
+import { HomepageCollectionSection } from '@/lib/types';
 
-export default function BlogHighlights() {
+interface BlogHighlightsProps {
+  content: HomepageCollectionSection;
+}
+
+export default function BlogHighlights({ content }: BlogHighlightsProps) {
   return (
     <section className="bg-white py-16 lg:py-24 border-t border-stone/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedSection direction="none" className="text-center max-w-3xl mx-auto">
           <p className="text-sm font-semibold tracking-[0.28em] uppercase text-[#1f5aa8]/70 mb-3">
-            İlham Köşesi
+            {content.eyebrow}
           </p>
           <h2 className="text-3xl sm:text-4xl font-semibold text-[#1f5aa8] mb-4">
-            Final Mobilya Blog
+            {content.heading}
           </h2>
           <p className="text-lg text-brown/55 leading-relaxed">
-            Dekorasyon trendleri, oda planlama ipuçları ve mobilya seçimini kolaylaştıran kısa rehberler.
+            {content.description}
           </p>
           <Link
-            href="/blog"
+            href={content.ctaHref}
             className="inline-flex items-center gap-2 mt-5 text-lg font-semibold text-[#1f5aa8] hover:text-charcoal transition-colors"
           >
-            Tümünü Görüntüle
+            {content.ctaLabel}
             <ArrowRight className="w-5 h-5" />
           </Link>
         </AnimatedSection>

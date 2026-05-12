@@ -1,25 +1,24 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { HomepageGalleryItem } from '@/lib/types';
+import { HomepageGalleryItem, HomepageShopTheLookSection } from '@/lib/types';
 
-export default async function ShopTheLook() {
-  let galleryItems: HomepageGalleryItem[] = [];
-  try {
-    const supabase = createServerSupabaseClient();
-    const { data } = await supabase.from('homepage_gallery_items').select('*').eq('is_active', true).order('slot_index');
-    galleryItems = ((data as HomepageGalleryItem[]) || []).slice(0, 4);
-  } catch {
-    // table may not exist yet
-  }
+interface ShopTheLookProps {
+  content: HomepageShopTheLookSection;
+}
+
+export default async function ShopTheLook({ content }: ShopTheLookProps) {
+  const supabase = createServerSupabaseClient();
+  const { data } = await supabase.from('homepage_gallery_items').select('*').eq('is_active', true).order('slot_index');
+  const galleryItems = ((data as HomepageGalleryItem[]) || []).slice(0, 4);
   const slots = Array.from({ length: 4 }, (_, index) => galleryItems.find((item) => item.slot_index === index + 1) || null);
 
   return (
     <section className="bg-cream">
       <div className="relative h-[80vh] min-h-[520px] w-full overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1618220179428-22790b461013?w=1920&q=85"
-          alt="Yeni Oturma Odanız"
+          src={content.backgroundImage}
+          alt={content.backgroundImageAlt}
           fill
           sizes="100vw"
           className="object-cover"
@@ -28,18 +27,17 @@ export default async function ShopTheLook() {
 
         <div className="relative z-10 h-full flex items-center justify-center px-4 text-center">
           <div className="max-w-3xl rounded-[32px] border border-white/18 bg-charcoal/38 px-8 py-10 shadow-2xl shadow-black/25 backdrop-blur-sm sm:px-12">
-            <h2 className="font-serif text-white leading-[0.95] tracking-tight [text-shadow:0_6px_24px_rgba(0,0,0,0.72)]">
-              <span className="block text-5xl sm:text-7xl">YENİ</span>
-              <span className="block text-5xl sm:text-7xl">OTURMA ODANIZ</span>
+            <h2 className="whitespace-pre-line font-serif text-5xl leading-[0.95] tracking-tight text-white [text-shadow:0_6px_24px_rgba(0,0,0,0.72)] sm:text-7xl">
+              {content.title}
             </h2>
             <p className="font-serif italic text-white/90 text-2xl sm:text-3xl mt-8 mb-10 [text-shadow:0_4px_18px_rgba(0,0,0,0.65)]">
-              Kalıcı Mobilya
+              {content.subtitle}
             </p>
             <Link
-              href="/kategori/oturma-grubu"
+              href={content.ctaHref}
               className="inline-block bg-white px-10 py-4 text-[11px] font-semibold tracking-[0.22em] uppercase text-charcoal hover:bg-gold hover:text-white transition-colors duration-300"
             >
-              OTURMA ODALARIMIZI KEŞFEDİN
+              {content.ctaLabel}
             </Link>
           </div>
         </div>

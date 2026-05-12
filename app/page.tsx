@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import type { Metadata } from 'next';
 import Hero from '@/components/sections/Hero';
 import CategoryGrid from '@/components/sections/CategoryGrid';
@@ -11,9 +9,8 @@ import BlogHighlights from '@/components/sections/BlogHighlights';
 import Testimonials from '@/components/sections/Testimonials';
 import TrustBar from '@/components/sections/TrustBar';
 import AllProductsSection from '@/components/sections/AllProductsSection';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { loadHomepageContent } from '@/lib/homepage';
 import { absoluteUrl, buildBreadcrumbSchema, buildMetadata, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site';
-import type { HeroSlide, Testimonial, TrustFeature, RoomCollection, BrandStoryContent } from '@/lib/types';
 
 export const metadata: Metadata = buildMetadata({
   title: 'Premium Mobilya ve Online Koleksiyonlar',
@@ -23,32 +20,7 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function HomePage() {
-  let heroSlides:      HeroSlide[]       = [];
-  let testimonials:    Testimonial[]     = [];
-  let trustFeatures:   TrustFeature[]    = [];
-  let roomCollections: RoomCollection[]  = [];
-  let brandStory:      BrandStoryContent | null = null;
-
-  try {
-    const supabase = createServerSupabaseClient();
-
-    const [heroRes, testimonialsRes, trustRes, roomsRes, brandStoryRes] = await Promise.allSettled([
-      supabase.from('hero_slides').select('*').eq('is_active', true).order('sort_order'),
-      supabase.from('testimonials').select('*').eq('is_active', true).order('sort_order'),
-      supabase.from('trust_features').select('*').eq('is_active', true).order('sort_order'),
-      supabase.from('room_collections').select('*').eq('is_active', true).order('sort_order'),
-      supabase.from('app_settings').select('value').eq('key', 'brand_story').single(),
-    ]);
-
-    heroSlides      = heroRes.status         === 'fulfilled' ? (heroRes.value.data         as HeroSlide[]       ?? []) : [];
-    testimonials    = testimonialsRes.status  === 'fulfilled' ? (testimonialsRes.value.data  as Testimonial[]     ?? []) : [];
-    trustFeatures   = trustRes.status         === 'fulfilled' ? (trustRes.value.data         as TrustFeature[]    ?? []) : [];
-    roomCollections = roomsRes.status         === 'fulfilled' ? (roomsRes.value.data         as RoomCollection[]  ?? []) : [];
-    brandStory      = brandStoryRes.status    === 'fulfilled' ? (brandStoryRes.value.data?.value as BrandStoryContent ?? null) : null;
-  } catch {
-    // DB unavailable — components will use their built-in defaults
-  }
-
+  const { content } = await loadHomepageContent();
   const homeSchemas = [
     buildBreadcrumbSchema([{ name: 'Ana Sayfa', path: '/' }]),
     {
@@ -68,18 +40,20 @@ export default async function HomePage() {
       <script
         type="application/ld+json"
         suppressHydrationWarning
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeSchemas) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(homeSchemas),
+        }}
       />
-      <Hero slides={heroSlides} />
-      <CategoryGrid />
-      <BrandStory content={brandStory} />
-      <FeaturedProducts />
-      <ShopTheLook />
-      <InstagramFeed rooms={roomCollections} />
-      <AllProductsSection />
-      <BlogHighlights />
-      <Testimonials reviews={testimonials} />
-      <TrustBar features={trustFeatures} />
+      <Hero slides={content.hero.slides} />
+      <CategoryGrid heading={content.categories.heading} items={content.categories.items} />
+      <BrandStory content={content.brandStory} />
+      <FeaturedProducts tabs={content.featuredProducts.tabs} />
+      <ShopTheLook content={content.shopTheLook} />
+      <InstagramFeed items={content.roomShowcase.items} />
+      <AllProductsSection content={content.allProducts} />
+      <BlogHighlights content={content.blogHighlights} />
+      <Testimonials content={content.testimonials} />
+      <TrustBar content={content.trustBar} />
     </>
   );
 }
