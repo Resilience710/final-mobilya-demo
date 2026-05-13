@@ -1,17 +1,21 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { HomepageGalleryItem, HomepageShopTheLookSection } from '@/lib/types';
+import { HomepageGalleryItem, HomepageGallerySlotItem, HomepageShopTheLookSection } from '@/lib/types';
 
 interface ShopTheLookProps {
   content: HomepageShopTheLookSection;
+  galleryLinks: HomepageGallerySlotItem[];
 }
 
-export default async function ShopTheLook({ content }: ShopTheLookProps) {
+export default async function ShopTheLook({ content, galleryLinks }: ShopTheLookProps) {
   const supabase = createServerSupabaseClient();
   const { data } = await supabase.from('homepage_gallery_items').select('*').eq('is_active', true).order('slot_index');
-  const galleryItems = ((data as HomepageGalleryItem[]) || []).slice(0, 4);
-  const slots = Array.from({ length: 4 }, (_, index) => galleryItems.find((item) => item.slot_index === index + 1) || null);
+  const galleryMediaItems = ((data as HomepageGalleryItem[]) || []).slice(0, 4);
+  const slots = Array.from({ length: 4 }, (_, index) => ({
+    media: galleryMediaItems.find((item) => item.slot_index === index + 1) || null,
+    href: galleryLinks[index]?.href || '/urunler',
+  }));
 
   return (
     <section className="bg-cream">
@@ -46,24 +50,25 @@ export default async function ShopTheLook({ content }: ShopTheLookProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {slots.map((slot, index) => (
-            <div
+            <Link
               key={index}
+              href={slot.href}
               className="relative aspect-[4/5] overflow-hidden rounded-[2rem] border border-dashed border-stone/30 bg-white shadow-[0_12px_28px_rgba(28,28,26,0.04)]"
             >
-              {slot?.image_url ? (
+              {slot.media?.image_url ? (
                 <Image
-                  src={slot.image_url}
-                  alt={slot.alt_text || `Galeri görseli ${index + 1}`}
+                  src={slot.media.image_url}
+                  alt={slot.media.alt_text || `Galeri görseli ${index + 1}`}
                   fill
                   sizes="(max-width: 1280px) 50vw, 25vw"
-                  className="object-cover"
+                  className="object-cover transition-transform duration-500 hover:scale-[1.02]"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-center text-sm font-medium uppercase tracking-[0.22em] text-brown/30">
                   Fotoğraf Alanı
                 </div>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       </div>

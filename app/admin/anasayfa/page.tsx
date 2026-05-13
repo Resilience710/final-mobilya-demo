@@ -557,6 +557,14 @@ export default function AdminAnasayfaPage() {
                     onChange={(value) => updateGalleryItem(slot.slot_index, { alt_text: value })}
                   />
 
+                  <TextField
+                    label={`Slot ${slot.slot_index} Linki`}
+                    value={form.gallery.items[slot.slot_index - 1]?.href || ''}
+                    onChange={(value) => updateForm((draft) => {
+                      draft.gallery.items[slot.slot_index - 1].href = value;
+                    })}
+                  />
+
                   <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm text-charcoal transition-colors hover:border-gold">
                     {savingSlot === slot.slot_index ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
                     Görsel Yükle

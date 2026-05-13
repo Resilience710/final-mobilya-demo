@@ -4,6 +4,7 @@ import {
   HomepageCollectionSection,
   HomepageContent,
   HomepageFeaturedTab,
+  HomepageGallerySlotItem,
   HomepageHeroSlide,
   HomepageRoomShowcaseItem,
   HomepageShopTheLookSection,
@@ -95,6 +96,13 @@ const DEFAULT_ROOM_SHOWCASE_ITEMS: HomepageRoomShowcaseItem[] = [
   },
 ];
 
+const DEFAULT_GALLERY_ITEMS: HomepageGallerySlotItem[] = [
+  { href: '/urunler' },
+  { href: '/urunler' },
+  { href: '/urunler' },
+  { href: '/urunler' },
+];
+
 const DEFAULT_TESTIMONIALS: HomepageTestimonialsItem[] = [
   {
     text: 'Final Mobilya yaşam alanımı eşsiz koleksiyonuyla bambaşka bir yere taşıdı. Kesinlikle tavsiye ederim.',
@@ -173,6 +181,9 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
     subtitle: 'Kalıcı Mobilya',
     ctaLabel: 'OTURMA ODALARIMIZI KEŞFEDİN',
     ctaHref: '/kategori/oturma-grubu',
+  },
+  gallery: {
+    items: DEFAULT_GALLERY_ITEMS,
   },
   roomShowcase: {
     items: DEFAULT_ROOM_SHOWCASE_ITEMS,
@@ -279,6 +290,14 @@ function normalizeRoomShowcaseItem(value: unknown, fallback: HomepageRoomShowcas
   };
 }
 
+function normalizeGallerySlotItem(value: unknown, fallback: HomepageGallerySlotItem): HomepageGallerySlotItem {
+  const input = typeof value === 'object' && value ? (value as Partial<HomepageGallerySlotItem>) : {};
+
+  return {
+    href: normalizeString(input.href, fallback.href),
+  };
+}
+
 function normalizeCollectionSection(value: unknown, fallback: HomepageCollectionSection): HomepageCollectionSection {
   const input = typeof value === 'object' && value ? (value as Partial<HomepageCollectionSection>) : {};
 
@@ -341,6 +360,11 @@ export function normalizeHomepageContent(value: unknown): HomepageContent {
       ),
     },
     shopTheLook: normalizeShopTheLookSection(input.shopTheLook, defaults.shopTheLook),
+    gallery: {
+      items: defaults.gallery.items.map((fallback, index) =>
+        normalizeGallerySlotItem(input.gallery?.items?.[index], fallback),
+      ),
+    },
     roomShowcase: {
       items: defaults.roomShowcase.items.map((fallback, index) =>
         normalizeRoomShowcaseItem(input.roomShowcase?.items?.[index], fallback),

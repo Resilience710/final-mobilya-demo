@@ -197,6 +197,14 @@ export interface HomepageRoomShowcaseSection {
   items: HomepageRoomShowcaseItem[];
 }
 
+export interface HomepageGallerySlotItem {
+  href: string;
+}
+
+export interface HomepageGallerySection {
+  items: HomepageGallerySlotItem[];
+}
+
 export interface HomepageCollectionSection {
   eyebrow: string;
   heading: string;
@@ -233,6 +241,7 @@ export interface HomepageContent {
   brandStory: HomepageBrandStorySection;
   featuredProducts: HomepageFeaturedProductsSection;
   shopTheLook: HomepageShopTheLookSection;
+  gallery: HomepageGallerySection;
   roomShowcase: HomepageRoomShowcaseSection;
   allProducts: HomepageCollectionSection;
   blogHighlights: HomepageCollectionSection;

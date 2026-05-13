@@ -41,22 +41,22 @@ const megaMenuItems: MenuItem[] = [
     columns: [
       {
         links: [
-          { label: 'Koltuk Takımı', href: '/urunler?arama=koltuk takımı' },
-          { label: 'Köşe Takımı', href: '/urunler?arama=köşe takımı' },
-          { label: 'Kanepe', href: '/urunler?arama=kanepe' },
+          { label: 'Koltuk Takımı', href: '/kategori/koltuk-takimi' },
+          { label: 'Köşe Takımı', href: '/kategori/kose-takimi' },
+          { label: 'Kanepe', href: '/kategori/kanepe' },
         ],
       },
       {
         links: [
-          { label: 'Berjer', href: '/urunler?arama=berjer' },
-          { label: 'TV Ünitesi', href: '/urunler?arama=tv ünitesi' },
-          { label: 'Orta Sehpa', href: '/urunler?arama=orta sehpa' },
+          { label: 'Berjer', href: '/kategori/berjer' },
+          { label: 'TV Ünitesi', href: '/kategori/tv-unitesi' },
+          { label: 'Orta Sehpa', href: '/kategori/orta-sehpa' },
         ],
       },
       {
         links: [
-          { label: 'Zigon Sehpa', href: '/urunler?arama=zigon sehpa' },
-          { label: 'Dresuar', href: '/urunler?arama=dresuar' },
+          { label: 'Zigon Sehpa', href: '/kategori/zigon-sehpa' },
+          { label: 'Dresuar', href: '/kategori/oturma-grubu-dresuar' },
         ],
       },
     ],
@@ -79,16 +79,16 @@ const megaMenuItems: MenuItem[] = [
     columns: [
       {
         links: [
-          { label: 'Yatak Odası Takımı', href: '/kategori/yatak-odasi' },
-          { label: 'Gardırop', href: '/urunler?arama=gardırop' },
-          { label: 'Şifonyer', href: '/urunler?arama=şifonyer' },
+          { label: 'Yatak Odası Takımı', href: '/kategori/yatak-odasi-takimi' },
+          { label: 'Gardırop', href: '/kategori/gardirop' },
+          { label: 'Şifonyer', href: '/kategori/sifonyer' },
         ],
       },
       {
         links: [
-          { label: 'Komodin', href: '/urunler?arama=komodin' },
-          { label: 'Çamaşırlık', href: '/urunler?arama=çamaşırlık' },
-          { label: 'Puf', href: '/urunler?arama=puf' },
+          { label: 'Komodin', href: '/kategori/komodin' },
+          { label: 'Çamaşırlık', href: '/kategori/camasirlik' },
+          { label: 'Puf', href: '/kategori/yatak-odasi-puf' },
         ],
       },
     ],
@@ -111,22 +111,22 @@ const megaMenuItems: MenuItem[] = [
     columns: [
       {
         links: [
-          { label: 'Yemek Odası Takımı', href: '/kategori/yemek-odasi' },
-          { label: 'Konsol Aynası', href: '/urunler?arama=konsol aynası' },
-          { label: 'Yemek Masası', href: '/urunler?arama=yemek masası' },
+          { label: 'Yemek Odası Takımı', href: '/kategori/yemek-odasi-takimi' },
+          { label: 'Konsol Aynası', href: '/kategori/konsol-aynasi' },
+          { label: 'Yemek Masası', href: '/kategori/yemek-masasi' },
         ],
       },
       {
         links: [
-          { label: 'Mutfak Masa Takımları', href: '/urunler?arama=mutfak masa takımı' },
-          { label: 'Vitrin', href: '/urunler?arama=vitrin' },
-          { label: 'Sandalye', href: '/urunler?arama=sandalye' },
+          { label: 'Mutfak Masa Takımları', href: '/kategori/mutfak-masa-takimlari' },
+          { label: 'Vitrin', href: '/kategori/vitrin' },
+          { label: 'Sandalye', href: '/kategori/sandalye' },
         ],
       },
       {
         links: [
-          { label: 'Konsol', href: '/urunler?arama=konsol' },
-          { label: 'Gümüşlük', href: '/urunler?arama=gümüşlük' },
+          { label: 'Konsol', href: '/kategori/konsol' },
+          { label: 'Gümüşlük', href: '/kategori/gumusluk' },
         ],
       },
     ],
@@ -149,16 +149,16 @@ const megaMenuItems: MenuItem[] = [
     columns: [
       {
         links: [
-          { label: 'Genç Odası Takımı', href: '/kategori/genc-odasi' },
-          { label: 'Karyola', href: '/urunler?arama=karyola' },
-          { label: 'Dolap', href: '/urunler?arama=genç odası dolap' },
+          { label: 'Genç Odası Takımı', href: '/kategori/genc-odasi-takimi' },
+          { label: 'Karyola', href: '/kategori/karyola' },
+          { label: 'Dolap', href: '/kategori/genc-odasi-dolap' },
         ],
       },
       {
         links: [
-          { label: 'Çalışma Masası', href: '/urunler?arama=çalışma masası' },
-          { label: 'Kitaplık', href: '/urunler?arama=kitaplık' },
-          { label: 'Ranza', href: '/urunler?arama=ranza' },
+          { label: 'Çalışma Masası', href: '/kategori/calisma-masasi' },
+          { label: 'Kitaplık', href: '/kategori/genc-odasi-kitaplik' },
+          { label: 'Ranza', href: '/kategori/ranza' },
         ],
       },
     ],
@@ -181,15 +181,15 @@ const megaMenuItems: MenuItem[] = [
     columns: [
       {
         links: [
-          { label: 'Baza', href: '/urunler?arama=baza' },
-          { label: 'Başlık', href: '/urunler?arama=başlık' },
-          { label: 'Sandıklı Baza', href: '/urunler?arama=sandıklı baza' },
+          { label: 'Baza', href: '/kategori/baza' },
+          { label: 'Başlık', href: '/kategori/baslik' },
+          { label: 'Sandıklı Baza', href: '/kategori/sandikli-baza' },
         ],
       },
       {
         links: [
-          { label: 'Baza Başlık Seti', href: '/urunler?arama=baza başlık seti' },
-          { label: 'Premium Başlıklar', href: '/urunler?arama=premium başlık' },
+          { label: 'Baza Başlık Seti', href: '/kategori/baza-baslik-seti' },
+          { label: 'Premium Başlıklar', href: '/kategori/premium-basliklar' },
         ],
       },
     ],
@@ -212,16 +212,16 @@ const megaMenuItems: MenuItem[] = [
     columns: [
       {
         links: [
-          { label: 'Tek Kişilik Yatak', href: '/urunler?arama=tek kişilik yatak' },
-          { label: 'Çift Kişilik Yatak', href: '/urunler?arama=çift kişilik yatak' },
-          { label: 'Ortopedik Yatak', href: '/urunler?arama=ortopedik yatak' },
+          { label: 'Tek Kişilik Yatak', href: '/kategori/tek-kisilik-yatak' },
+          { label: 'Çift Kişilik Yatak', href: '/kategori/cift-kisilik-yatak' },
+          { label: 'Ortopedik Yatak', href: '/kategori/ortopedik-yatak' },
         ],
       },
       {
         links: [
-          { label: 'Bebek Yatağı', href: '/urunler?arama=bebek yatağı' },
-          { label: 'Yatak Pedi', href: '/urunler?arama=yatak pedi' },
-          { label: 'Yastık', href: '/urunler?arama=yastık' },
+          { label: 'Bebek Yatağı', href: '/kategori/bebek-yatagi' },
+          { label: 'Yatak Pedi', href: '/kategori/yatak-pedi' },
+          { label: 'Yastık', href: '/kategori/yastik' },
         ],
       },
     ],
@@ -244,16 +244,16 @@ const megaMenuItems: MenuItem[] = [
     columns: [
       {
         links: [
-          { label: 'Ayna', href: '/urunler?arama=ayna' },
-          { label: 'Dresuar', href: '/urunler?arama=dresuar' },
-          { label: 'Kitaplık', href: '/urunler?arama=kitaplık' },
+          { label: 'Ayna', href: '/kategori/ayna' },
+          { label: 'Dresuar', href: '/kategori/tamamlayici-dresuar' },
+          { label: 'Kitaplık', href: '/kategori/tamamlayici-kitaplik' },
         ],
       },
       {
         links: [
-          { label: 'Sehpa', href: '/urunler?arama=sehpa' },
-          { label: 'Lambader', href: '/urunler?arama=lambader' },
-          { label: 'Puf', href: '/urunler?arama=puf' },
+          { label: 'Sehpa', href: '/kategori/sehpa' },
+          { label: 'Lambader', href: '/kategori/lambader' },
+          { label: 'Puf', href: '/kategori/tamamlayici-puf' },
         ],
       },
     ],
@@ -433,7 +433,10 @@ export default function Header({ announcement }: { announcement?: string }) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <nav className="flex items-center justify-between gap-2 overflow-x-auto py-3 no-scrollbar">
               {megaMenuItems.map((item) => {
-                const isCurrent = activeMenu === item.label || pathname === item.href;
+                const isCurrent =
+                  activeMenu === item.label ||
+                  pathname === item.href ||
+                  item.columns.some((column) => column.links.some((link) => link.href === pathname));
 
                 return (
                   <Link

@@ -31,10 +31,24 @@ export default async function KategoriPage() {
     counts.set(categoryId, (counts.get(categoryId) || 0) + 1);
   }
 
-  const categoryList: Category[] = ((categories as Category[]) || []).map((category) => ({
-    ...category,
-    product_count: counts.get(category.id) || 0,
-  }));
+  const allCategories = (categories as Category[]) || [];
+  const categoryList: Category[] = allCategories
+    .filter((category) => !category.parent_id)
+    .map((category) => {
+      const childIds = allCategories
+        .filter((item) => item.parent_id === category.id)
+        .map((item) => item.id);
+
+      const productCount = [category.id, ...childIds].reduce(
+        (sum, categoryId) => sum + (counts.get(categoryId) || 0),
+        0,
+      );
+
+      return {
+        ...category,
+        product_count: productCount,
+      };
+    });
   const categorySchemas = [
     buildBreadcrumbSchema([
       { name: 'Ana Sayfa', path: '/' },

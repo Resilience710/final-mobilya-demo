@@ -48,7 +48,7 @@ export default async function HomePage() {
       <CategoryGrid heading={content.categories.heading} items={content.categories.items} />
       <BrandStory content={content.brandStory} />
       <FeaturedProducts tabs={content.featuredProducts.tabs} />
-      <ShopTheLook content={content.shopTheLook} />
+      <ShopTheLook content={content.shopTheLook} galleryLinks={content.gallery.items} />
       <InstagramFeed items={content.roomShowcase.items} />
       <AllProductsSection content={content.allProducts} />
       <BlogHighlights content={content.blogHighlights} />

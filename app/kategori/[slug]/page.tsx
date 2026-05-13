@@ -45,10 +45,23 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   if (!cat) notFound();
 
+  let categoryIds = [cat.id];
+
+  if (!cat.parent_id) {
+    const { data: children } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('parent_id', cat.id);
+
+    if (children?.length) {
+      categoryIds = [cat.id, ...children.map((item: { id: string }) => item.id)];
+    }
+  }
+
   const { data: products } = await supabase
     .from('products')
     .select('*, variants:product_variants(*)')
-    .eq('category_id', cat.id)
+    .in('category_id', categoryIds)
     .eq('is_active', true);
 
   const { data: campaignRows } = await supabase
