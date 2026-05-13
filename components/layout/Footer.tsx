@@ -18,16 +18,15 @@ const footerLinks: Record<string, { label: string; href: string }[]> = {
   'Yardım': [
     { label: 'Hesabım', href: '/hesabim' },
     { label: 'Siparişlerim', href: '/hesabim/siparislerim' },
-    { label: 'Nakliyat', href: '/nakliyat' },
-    { label: 'Kargo & Teslimat', href: '/kargo-teslimat' },
-    { label: 'İade & Değişim', href: '/iade-degisim' },
-    { label: 'İletişim', href: '/iletisim' },
+    { label: 'Mesafeli Satış Sözleşmesi', href: '/mesafeli-satis-sozlesmesi' },
+    { label: 'İptal ve İade Koşulları', href: '/iptal-ve-iade-kosullari' },
+    { label: 'Teslimat ve Kargo Bilgileri', href: '/teslimat-ve-kargo-bilgileri' },
   ],
   'Final Mobilya': [
-    { label: 'Hakkımızda', href: '/hakkimizda' },
+    { label: 'Hakkımızda ve İletişim Bilgileri', href: '/hakkimizda-ve-iletisim-bilgileri' },
     { label: 'Şubelerimiz', href: '/subelerimiz' },
     { label: 'Bayilik', href: '/bayilik' },
-    { label: 'Gizlilik Politikası', href: '/gizlilik-politikasi' },
+    { label: 'Gizlilik ve Güvenlik Politikası', href: '/gizlilik-ve-guvenlik-politikasi' },
   ],
 };
 

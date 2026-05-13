@@ -24,6 +24,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/kargo-teslimat',
     '/iade-degisim',
     '/gizlilik-politikasi',
+    '/mesafeli-satis-sozlesmesi',
+    '/iptal-ve-iade-kosullari',
+    '/gizlilik-ve-guvenlik-politikasi',
+    '/teslimat-ve-kargo-bilgileri',
+    '/hakkimizda-ve-iletisim-bilgileri',
   ].map((path) => ({
     url: absoluteUrl(path || '/'),
     lastModified: new Date(),
