@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { MapPin, Phone, Building2, ShieldCheck, PackageCheck } from 'lucide-react';
+import { MapPin, Phone, Building2, ShieldCheck, PackageCheck, Mail } from 'lucide-react';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import type { Store } from '@/lib/types';
 import { absoluteUrl, buildBreadcrumbSchema, buildMetadata, buildWebPageSchema } from '@/lib/site';
@@ -30,6 +30,30 @@ export default async function HakkimizdaVeIletisimBilgileriPage() {
       { name: pageTitle, path: '/hakkimizda-ve-iletisim-bilgileri' },
     ]),
     buildWebPageSchema(pageTitle, pageDescription, '/hakkimizda-ve-iletisim-bilgileri', 'AboutPage'),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'Final Mobilya',
+      url: absoluteUrl('/'),
+      telephone: '+905445319012',
+      email: 'destek@finalmobilya.com',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Gesi Fatih Mah. Gunsazak Cd. No: 37B',
+        addressLocality: 'Melikgazi',
+        addressRegion: 'Kayseri',
+        postalCode: '38004',
+        addressCountry: 'TR',
+      },
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'customer support',
+        telephone: '+905445319012',
+        email: 'destek@finalmobilya.com',
+        areaServed: 'TR',
+        availableLanguage: ['tr'],
+      },
+    },
     ...stores.map((store) => ({
       '@context': 'https://schema.org',
       '@type': 'FurnitureStore',
@@ -126,6 +150,34 @@ export default async function HakkimizdaVeIletisimBilgileriPage() {
                       yönlendirme alınabilir. Fiziksel ürün deneyimi için aktif mağazalar aşağıda
                       listelenmiştir.
                     </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-stone/20 bg-beige p-5 text-sm text-brown/75">
+                <p className="font-semibold text-charcoal">Merkez iletişim bilgileri</p>
+                <div className="mt-3 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Phone className="mt-0.5 h-4 w-4 text-gold" />
+                    <a href="tel:+905445319012" className="transition-colors hover:text-charcoal">
+                      +90 544 531 90 12
+                    </a>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Mail className="mt-0.5 h-4 w-4 text-gold" />
+                    <a
+                      href="mailto:destek@finalmobilya.com"
+                      className="transition-colors hover:text-charcoal"
+                    >
+                      destek@finalmobilya.com
+                    </a>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <MapPin className="mt-0.5 h-4 w-4 text-gold" />
+                    <span>
+                      Gesi Fatih Mah. Gunsazak Cd. No: 37B, Melikgazi / Kayseri, 38004
+                      Kayseri, Turkey
+                    </span>
                   </div>
                 </div>
               </div>

@@ -283,6 +283,57 @@ export default function AdminAnasayfaPage() {
       </div>
 
       <form onSubmit={saveSettings} className="space-y-8">
+        <SectionCard title="Açılış Pop-up" description="Site açıldığında gösterilecek kampanya penceresini bu alandan yönetin.">
+          <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+            <ImageField
+              label="Pop-up Görseli"
+              fieldKey="site-popup"
+              value={form.popup.image}
+              altValue={form.popup.imageAlt}
+              uploading={uploadingField === 'site-popup'}
+              onUrlChange={(value) => updateForm((draft) => { draft.popup.image = value; })}
+              onAltChange={(value) => updateForm((draft) => { draft.popup.imageAlt = value; })}
+              onUpload={(event) => uploadContentImage(event, 'site-popup', (publicUrl) => {
+                updateForm((draft) => { draft.popup.image = publicUrl; });
+              })}
+            />
+            <div className="space-y-4 rounded-[24px] border border-gray-100 bg-gray-50/70 p-4">
+              <ToggleField
+                label="Pop-up Aktif"
+                checked={form.popup.isActive}
+                onChange={(checked) => updateForm((draft) => { draft.popup.isActive = checked; })}
+              />
+              <TextField
+                label="Üst Rozet"
+                value={form.popup.badge}
+                onChange={(value) => updateForm((draft) => { draft.popup.badge = value; })}
+              />
+              <TextAreaField
+                label="Başlık"
+                value={form.popup.title}
+                rows={4}
+                onChange={(value) => updateForm((draft) => { draft.popup.title = value; })}
+              />
+              <TextAreaField
+                label="Açıklama"
+                value={form.popup.description}
+                rows={4}
+                onChange={(value) => updateForm((draft) => { draft.popup.description = value; })}
+              />
+              <TextField
+                label="Buton Yazısı"
+                value={form.popup.ctaLabel}
+                onChange={(value) => updateForm((draft) => { draft.popup.ctaLabel = value; })}
+              />
+              <TextField
+                label="Gideceği Link"
+                value={form.popup.href}
+                onChange={(value) => updateForm((draft) => { draft.popup.href = value; })}
+              />
+            </div>
+          </div>
+        </SectionCard>
+
         <SectionCard title="Hero Sliderları" description="Ana sayfanın üst kısmındaki üç slider görselini ve yazılarını yönetin.">
           <div className="grid gap-6 xl:grid-cols-3">
             {form.hero.slides.map((slide, index) => (
@@ -844,6 +895,28 @@ function TextAreaField({
         className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-charcoal focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
       />
     </div>
+  );
+}
+
+function ToggleField({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3">
+      <span className="text-sm font-medium text-charcoal">{label}</span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="h-4 w-4 rounded border-gray-300 text-gold focus:ring-gold/30"
+      />
+    </label>
   );
 }
 

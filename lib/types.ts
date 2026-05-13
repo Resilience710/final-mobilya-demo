@@ -185,6 +185,17 @@ export interface HomepageShopTheLookSection {
   ctaHref: string;
 }
 
+export interface HomepagePopupSection {
+  isActive: boolean;
+  badge: string;
+  title: string;
+  description: string;
+  ctaLabel: string;
+  href: string;
+  image: string;
+  imageAlt: string;
+}
+
 export interface HomepageRoomShowcaseItem {
   label: string;
   href: string;
@@ -237,6 +248,7 @@ export interface HomepageContent {
   hero: {
     slides: HomepageHeroSlide[];
   };
+  popup: HomepagePopupSection;
   categories: HomepageCategoriesSection;
   brandStory: HomepageBrandStorySection;
   featuredProducts: HomepageFeaturedProductsSection;

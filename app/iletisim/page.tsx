@@ -34,6 +34,14 @@ export default function IletisimPage() {
         intro="Bu sitede iletişim deneyimini, kullanıcının ihtiyacına göre doğru yüzeye yönlendirecek şekilde düzenledik. Sipariş takibi, mağaza ziyareti ve iş ortaklığı için farklı kanallar kullanılır."
         sections={[
           {
+            title: 'Doğrudan iletişim bilgileri',
+            paragraphs: [
+              'Telefon: +90 544 531 90 12',
+              'Destek e-postası: destek@finalmobilya.com',
+              'Adres: Gesi Fatih Mah. Gunsazak Cd. No: 37B, Melikgazi / Kayseri, 38004 Kayseri, Turkey',
+            ],
+          },
+          {
             title: 'Sipariş ve hesap desteği',
             paragraphs: [
               'Aktif siparişleriniz ve geçmiş sipariş hareketleriniz için hesabınız altındaki sipariş ekranını kullanın. Bu alan, oturum açmış kullanıcılar için sipariş takibini tek yerde toplar.',
@@ -62,14 +70,14 @@ export default function IletisimPage() {
             description: 'Giriş yaptıktan sonra sipariş detaylarınızı ve durum değişimlerini görüntüleyin.',
           },
           {
+            href: 'mailto:destek@finalmobilya.com',
+            label: 'Destek E-Postası',
+            description: 'Sipariş, teslimat ve satış sonrası sorularınız için destek@finalmobilya.com adresine yazın.',
+          },
+          {
             href: '/subelerimiz',
             label: 'Şubelerimiz',
             description: 'Mağaza adresleri, şehir filtresi ve yol tarifi bağlantılarına ulaşın.',
-          },
-          {
-            href: '/bayilik',
-            label: 'Bayilik Başvurusu',
-            description: 'Kurumsal iş birlikleri ve bayi ağı için başvuru akışını başlatın.',
           },
         ]}
       />

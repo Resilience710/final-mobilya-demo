@@ -6,6 +6,7 @@ import {
   HomepageFeaturedTab,
   HomepageGallerySlotItem,
   HomepageHeroSlide,
+  HomepagePopupSection,
   HomepageRoomShowcaseItem,
   HomepageShopTheLookSection,
   HomepageTestimonialsItem,
@@ -50,6 +51,18 @@ const DEFAULT_CATEGORY_ITEMS: HomepageCategoryItem[] = [
   { label: 'YATAK', href: '/kategori/yatak' },
   { label: 'TAMAMLAYICI ÜRÜNLER', href: '/kategori/tamamlayici-urunler' },
 ];
+
+const DEFAULT_POPUP: HomepagePopupSection = {
+  isActive: true,
+  badge: 'Sınırlı Süre',
+  title: 'Bu Ürünler Kısa Süreli İndirimde',
+  description:
+    'Seçili indirimli ürünleri şimdi inceleyin. Kampanya stok ve süre ile sınırlı olarak devam eder.',
+  ctaLabel: 'İndirimli Ürünleri Gör',
+  href: '/urunler?indirim=1',
+  image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=85',
+  imageAlt: 'İndirimli mobilya koleksiyonu',
+};
 
 const DEFAULT_FEATURED_TABS: HomepageFeaturedTab[] = [
   {
@@ -145,6 +158,7 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
   hero: {
     slides: DEFAULT_HERO_SLIDES,
   },
+  popup: DEFAULT_POPUP,
   categories: {
     heading: 'EN İYİYİ KEŞFEDİN',
     items: DEFAULT_CATEGORY_ITEMS,
@@ -290,6 +304,21 @@ function normalizeRoomShowcaseItem(value: unknown, fallback: HomepageRoomShowcas
   };
 }
 
+function normalizePopupSection(value: unknown, fallback: HomepagePopupSection): HomepagePopupSection {
+  const input = typeof value === 'object' && value ? (value as Partial<HomepagePopupSection>) : {};
+
+  return {
+    isActive: typeof input.isActive === 'boolean' ? input.isActive : fallback.isActive,
+    badge: normalizeString(input.badge, fallback.badge),
+    title: normalizeString(input.title, fallback.title),
+    description: normalizeString(input.description, fallback.description),
+    ctaLabel: normalizeString(input.ctaLabel, fallback.ctaLabel),
+    href: normalizeString(input.href, fallback.href),
+    image: normalizeString(input.image, fallback.image),
+    imageAlt: normalizeString(input.imageAlt, fallback.imageAlt),
+  };
+}
+
 function normalizeGallerySlotItem(value: unknown, fallback: HomepageGallerySlotItem): HomepageGallerySlotItem {
   const input = typeof value === 'object' && value ? (value as Partial<HomepageGallerySlotItem>) : {};
 
@@ -338,6 +367,7 @@ export function normalizeHomepageContent(value: unknown): HomepageContent {
         normalizeHeroSlide(input.hero?.slides?.[index], fallback),
       ),
     },
+    popup: normalizePopupSection(input.popup, defaults.popup),
     categories: {
       heading: normalizeString(input.categories?.heading, defaults.categories.heading),
       items: defaults.categories.items.map((fallback, index) =>

@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CartDrawer from '@/components/layout/CartDrawer';
 import SupportWidget from '@/components/layout/SupportWidget';
+import SitePopup from '@/components/layout/SitePopup';
 import Providers from './Providers';
 import {
   absoluteUrl,
@@ -19,6 +20,7 @@ import {
   SITE_NAME,
 } from '@/lib/site';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { loadHomepageContent } from '@/lib/homepage';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -95,6 +97,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   let announcement: string | undefined;
+  const { content } = await loadHomepageContent();
   try {
     const supabase = createServerSupabaseClient();
     const { data } = await supabase.from('app_settings').select('value').eq('key', 'announcement').single();
@@ -126,6 +129,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Header announcement={announcement} />
           <CartDrawer />
           <SupportWidget />
+          <SitePopup popup={content.popup} />
           <main>{children}</main>
           <Footer />
         </Providers>

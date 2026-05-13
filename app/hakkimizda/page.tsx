@@ -54,6 +54,14 @@ export default function HakkimizdaPage() {
               'Bayilik yapılanmamız ve şube ağı da bu bütünsel deneyimi desteklemek için yapılandırılmıştır.',
             ],
           },
+          {
+            title: 'İletişim ve merkez adresi',
+            paragraphs: [
+              'Müşteri destek hattı: +90 544 531 90 12',
+              'Destek e-postası: destek@finalmobilya.com',
+              'Merkez iletişim adresi: Gesi Fatih Mah. Gunsazak Cd. No: 37B, Melikgazi / Kayseri, 38004 Kayseri, Turkey',
+            ],
+          },
         ]}
         links={[
           {
@@ -67,9 +75,9 @@ export default function HakkimizdaPage() {
             description: 'Size en yakın mağazayı bulun ve ziyaret planınızı yapın.',
           },
           {
-            href: '/bayilik',
-            label: 'Bayilik Programı',
-            description: 'İş ortaklığı modeli ve başvuru süreci hakkında bilgi alın.',
+            href: '/hakkimizda-ve-iletisim-bilgileri',
+            label: 'Kurumsal İletişim',
+            description: 'Telefon, destek e-postası, mağaza adresleri ve kurumsal temas noktalarına ulaşın.',
           },
         ]}
       />
