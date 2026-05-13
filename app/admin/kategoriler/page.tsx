@@ -17,6 +17,7 @@ type FormState = {
   slug: string;
   description: string;
   image_url: string;
+  parent_id: string;
   sort_order: string;
 };
 
@@ -25,7 +26,13 @@ const emptyForm: FormState = {
   slug: '',
   description: '',
   image_url: '',
+  parent_id: '',
   sort_order: '0',
+};
+
+type CategoryTreeRow = {
+  category: Category;
+  depth: number;
 };
 
 function slugify(value: string) {
@@ -82,9 +89,54 @@ export default function AdminCategoriesPage() {
   useEffect(() => { load(); }, []);
 
   const sortedPreview = useMemo(
-    () => [...categories].sort((a, b) => a.sort_order - b.sort_order),
+    () => {
+      const byParent = new Map<string | null, Category[]>();
+      const sorted = [...categories].sort((a, b) => {
+        if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+        return a.name.localeCompare(b.name, 'tr');
+      });
+
+      for (const category of sorted) {
+        const key = category.parent_id || null;
+        byParent.set(key, [...(byParent.get(key) || []), category]);
+      }
+
+      const rows: CategoryTreeRow[] = [];
+
+      const walk = (parentId: string | null, depth: number) => {
+        for (const category of byParent.get(parentId) || []) {
+          rows.push({ category, depth });
+          walk(category.id, depth + 1);
+        }
+      };
+
+      walk(null, 0);
+      return rows;
+    },
     [categories]
   );
+
+  const parentOptions = useMemo(() => {
+    if (!modal) return sortedPreview;
+
+    const blockedIds = new Set<string>();
+    if (modal.data) {
+      blockedIds.add(modal.data.id);
+      const queue = [modal.data.id];
+
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        for (const category of categories) {
+          if (category.parent_id === current && !blockedIds.has(category.id)) {
+            blockedIds.add(category.id);
+            queue.push(category.id);
+          }
+        }
+      }
+    }
+
+    return sortedPreview.filter(({ category }) => !blockedIds.has(category.id));
+  }, [categories, modal, sortedPreview]);
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -98,6 +150,7 @@ export default function AdminCategoriesPage() {
       slug: category.slug,
       description: category.description || '',
       image_url: category.image_url || '',
+      parent_id: category.parent_id || '',
       sort_order: String(category.sort_order),
     });
     setFormError('');
@@ -131,6 +184,7 @@ export default function AdminCategoriesPage() {
       slug: cleanSlug,
       description: form.description.trim() || null,
       image_url: form.image_url.trim() || null,
+      parent_id: form.parent_id || null,
       sort_order: parseInt(form.sort_order, 10) || 0,
     };
 
@@ -159,9 +213,15 @@ export default function AdminCategoriesPage() {
 
   const handleDelete = async (category: Category) => {
     const productCount = categoryProductCounts[category.id] || 0;
+    const hasChildren = categories.some((item) => item.parent_id === category.id);
 
     if (productCount > 0) {
       alert('Bu kategoriye bağlı ürünler var. Önce ürünleri taşıyın veya silin.');
+      return;
+    }
+
+    if (hasChildren) {
+      alert('Bu kategoriye bağlı alt kategoriler var. Önce alt kategorileri taşıyın veya silin.');
       return;
     }
 
@@ -226,7 +286,7 @@ export default function AdminCategoriesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {sortedPreview.map((category) => (
+                {sortedPreview.map(({ category, depth }) => (
                   <tr key={category.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -239,7 +299,12 @@ export default function AdminCategoriesPage() {
                           )}
                         </div>
                         <div>
-                          <p className="text-sm text-charcoal font-medium">{category.name}</p>
+                          <p className="text-sm text-charcoal font-medium">
+                            {depth > 0 ? `${'— '.repeat(depth)}${category.name}` : category.name}
+                          </p>
+                          {category.parent_id && (
+                            <p className="text-[11px] text-brown/35">Alt kategori</p>
+                          )}
                           <p className="text-xs text-brown/40 max-w-sm truncate">{category.description || 'Açıklama yok'}</p>
                         </div>
                       </div>
@@ -322,6 +387,23 @@ export default function AdminCategoriesPage() {
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-charcoal placeholder:text-brown/30 focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold transition-all"
                       />
                     </Field>
+                    <Field label="Üst Kategori">
+                      <select
+                        value={form.parent_id}
+                        onChange={(e) => setForm((prev) => ({ ...prev, parent_id: e.target.value }))}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold transition-all"
+                      >
+                        <option value="">Ana kategori</option>
+                        {parentOptions.map(({ category, depth }) => (
+                          <option key={category.id} value={category.id}>
+                            {depth > 0 ? `${'— '.repeat(depth)}${category.name}` : category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="Sıralama">
                       <input
                         type="number"

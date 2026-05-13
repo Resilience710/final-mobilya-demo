@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, X, Loader2, Upload, Save } from 'lucide-react';
@@ -64,6 +64,11 @@ type ProductForm = {
 };
 
 const OPTION_CONFIG_SPEC_KEY = '__option_config';
+
+type CategorySelectOption = {
+  id: string;
+  label: string;
+};
 
 function createEmptyVariant(): AdminVariantForm {
   return {
@@ -206,6 +211,34 @@ function inferOptionConfigFromVariants(variants: ProductVariant[] | undefined): 
   };
 }
 
+function buildCategorySelectOptions(categories: Category[]): CategorySelectOption[] {
+  const byParent = new Map<string | null, Category[]>();
+  const sorted = [...categories].sort((a, b) => {
+    if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+    return a.name.localeCompare(b.name, 'tr');
+  });
+
+  for (const category of sorted) {
+    const key = category.parent_id || null;
+    byParent.set(key, [...(byParent.get(key) || []), category]);
+  }
+
+  const options: CategorySelectOption[] = [];
+
+  const walk = (parentId: string | null, depth: number) => {
+    for (const category of byParent.get(parentId) || []) {
+      options.push({
+        id: category.id,
+        label: depth > 0 ? `${'— '.repeat(depth)}${category.name}` : category.name,
+      });
+      walk(category.id, depth + 1);
+    }
+  };
+
+  walk(null, 0);
+  return options;
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -221,6 +254,7 @@ export default function AdminProductsPage() {
   const [tagInput, setTagInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
+  const categoryOptions = useMemo(() => buildCategorySelectOptions(categories), [categories]);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -765,8 +799,13 @@ export default function AdminProductsPage() {
                       className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
                     >
                       <option value="">Seçiniz</option>
-                      {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {categoryOptions.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.label}
+                        </option>
+                      ))}
                     </select>
+                    <p className="mt-1 text-xs text-brown/45">Ana kategori veya alt kategori seçebilirsiniz.</p>
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-charcoal">SKU</label>
