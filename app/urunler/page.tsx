@@ -13,7 +13,7 @@ import { absoluteUrl, buildBreadcrumbSchema, buildMetadata, cleanText, SITE_NAME
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: { kategori?: string; siralama?: string; arama?: string; indirim?: string; 'one-cikan'?: string };
+  searchParams: { kategori?: string; 'alt-kategori'?: string; siralama?: string; arama?: string; indirim?: string; 'one-cikan'?: string };
 }): Promise<Metadata> {
   const supabase = createServerSupabaseClient();
   let title = 'Ürünler';
@@ -21,7 +21,7 @@ export async function generateMetadata({
   let canonicalPath = '/urunler';
   let canonical = absoluteUrl(canonicalPath);
   const hasQueryVariants = Boolean(
-    searchParams.kategori || searchParams.siralama || searchParams.arama || searchParams.indirim || searchParams['one-cikan']
+    searchParams.kategori || searchParams['alt-kategori'] || searchParams.siralama || searchParams.arama || searchParams.indirim || searchParams['one-cikan']
   );
 
   if (searchParams.kategori) {
@@ -68,7 +68,7 @@ export async function generateMetadata({
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: { kategori?: string; siralama?: string; arama?: string; indirim?: string; 'one-cikan'?: string };
+  searchParams: { kategori?: string; 'alt-kategori'?: string; siralama?: string; arama?: string; indirim?: string; 'one-cikan'?: string };
 }) {
   const supabase = createServerSupabaseClient();
 
@@ -91,14 +91,28 @@ export default async function ProductsPage({
     .select('*, category:categories(*), variants:product_variants(*)')
     .eq('is_active', true);
 
-  if (searchParams.kategori) {
+  if (searchParams['alt-kategori']) {
+    const { data: subCat } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('slug', searchParams['alt-kategori'])
+      .maybeSingle();
+    if (subCat) {
+      query = query.eq('category_id', subCat.id);
+    }
+  } else if (searchParams.kategori) {
     const { data: cat } = await supabase
       .from('categories')
       .select('id')
       .eq('slug', searchParams.kategori)
-      .single();
+      .maybeSingle();
     if (cat) {
-      query = query.eq('category_id', cat.id);
+      const { data: subCats } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('parent_id', cat.id);
+      const allIds = [cat.id, ...((subCats || []).map((s: { id: string }) => s.id))];
+      query = query.in('category_id', allIds);
     }
   }
 
@@ -208,6 +222,7 @@ export default async function ProductsPage({
         products={resolvedProducts}
         categories={(categories as Category[]) || []}
         activeCategory={searchParams.kategori || null}
+        activeSubcategory={searchParams['alt-kategori'] || null}
         activeSort={searchParams.siralama || null}
         searchQuery={searchParams.arama || null}
         showDiscountCountdown={searchParams.indirim === '1'}
