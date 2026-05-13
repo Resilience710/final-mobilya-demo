@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, SlidersHorizontal, X, Grid3X3, LayoutList } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Grid3X3, LayoutList, ChevronRight } from 'lucide-react';
 import { Product, Category } from '@/lib/types';
 import ProductCard from '@/components/product/ProductCard';
 
@@ -11,6 +11,7 @@ interface Props {
   products: Product[];
   categories: Category[];
   activeCategory: string | null;
+  activeSubcategory: string | null;
   activeSort: string | null;
   searchQuery: string | null;
   showDiscountCountdown?: boolean;
@@ -27,6 +28,7 @@ export default function ProductsClient({
   products,
   categories,
   activeCategory,
+  activeSubcategory,
   activeSort,
   searchQuery,
   showDiscountCountdown = false,
@@ -36,22 +38,55 @@ export default function ProductsClient({
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const updateParams = (key: string, value: string) => {
+  const updateParams = (updates: Record<string, string>) => {
     const params = new URLSearchParams(window.location.search);
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
     }
     router.push(`/urunler?${params.toString()}`);
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    updateParams('arama', search);
+    updateParams({ arama: search });
   };
 
-  const activeCategoryName = categories.find((category) => category.slug === activeCategory)?.name;
+  const rootCategories = useMemo(
+    () => categories.filter((c) => !c.parent_id),
+    [categories],
+  );
+
+  const activeParentCategory = useMemo(
+    () => categories.find((c) => c.slug === activeCategory && !c.parent_id)
+      || categories.find((c) => {
+        if (c.slug !== activeCategory) return false;
+        return !!c.parent_id;
+      }),
+    [categories, activeCategory],
+  );
+
+  const activeParentSlug = useMemo(() => {
+    if (!activeCategory) return null;
+    const cat = categories.find((c) => c.slug === activeCategory);
+    if (!cat) return null;
+    if (!cat.parent_id) return cat.slug;
+    const parent = categories.find((c) => c.id === cat.parent_id);
+    return parent?.slug || null;
+  }, [categories, activeCategory]);
+
+  const subcategoriesOfActive = useMemo(() => {
+    if (!activeParentSlug) return [];
+    const parent = categories.find((c) => c.slug === activeParentSlug && !c.parent_id);
+    if (!parent) return [];
+    return categories.filter((c) => c.parent_id === parent.id);
+  }, [categories, activeParentSlug]);
+
+  const activeCategoryObj = categories.find((c) => c.slug === (activeSubcategory || activeCategory));
+  const activeCategoryName = activeCategoryObj?.name;
 
   return (
     <div className="min-h-screen bg-cream pt-24 pb-20">
@@ -98,7 +133,7 @@ export default function ProductsClient({
             {/* Sort */}
             <select
               value={activeSort || ''}
-              onChange={(e) => updateParams('siralama', e.target.value)}
+              onChange={(e) => updateParams({ siralama: e.target.value })}
               className="min-h-12 px-4 py-3 bg-white border border-stone/40 rounded-xl text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold transition-all"
               aria-label="Ürün sıralaması"
             >
@@ -150,49 +185,99 @@ export default function ProductsClient({
               exit={{ opacity: 0, height: 0 }}
               className="mb-8 overflow-hidden"
             >
-              <div className="bg-white rounded-2xl border border-stone/30 p-6">
-                <h3 className="text-sm font-medium text-charcoal mb-4">Kategoriler</h3>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => updateParams('kategori', '')}
-                    className={`min-h-11 px-4 py-2 rounded-full text-sm transition-all ${
-                      !activeCategory ? 'bg-charcoal text-white' : 'bg-cream border border-stone/40 text-brown hover:border-gold/60'
-                    }`}
-                  >
-                    Tümü
-                  </button>
-                  {categories.map((cat) => (
+              <div className="bg-white rounded-2xl border border-stone/30 p-6 space-y-5">
+                {/* Ana kategoriler */}
+                <div>
+                  <h3 className="text-xs font-semibold text-brown/50 uppercase tracking-wider mb-3">Kategoriler</h3>
+                  <div className="flex flex-wrap gap-2">
                     <button
-                      key={cat.id}
-                      onClick={() => updateParams('kategori', cat.slug)}
+                      onClick={() => updateParams({ kategori: '', 'alt-kategori': '' })}
                       className={`min-h-11 px-4 py-2 rounded-full text-sm transition-all ${
-                        activeCategory === cat.slug ? 'bg-charcoal text-white' : 'bg-cream border border-stone/40 text-brown hover:border-gold/60'
+                        !activeCategory ? 'bg-charcoal text-white' : 'bg-cream border border-stone/40 text-brown hover:border-gold/60'
                       }`}
                     >
-                      {cat.name}
+                      Tümü
                     </button>
-                  ))}
+                    {rootCategories.map((cat) => {
+                      const isActive = activeParentSlug === cat.slug;
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => updateParams({ kategori: cat.slug, 'alt-kategori': '' })}
+                          className={`min-h-11 px-4 py-2 rounded-full text-sm transition-all ${
+                            isActive ? 'bg-charcoal text-white' : 'bg-cream border border-stone/40 text-brown hover:border-gold/60'
+                          }`}
+                        >
+                          {cat.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                {/* Alt kategoriler */}
+                {subcategoriesOfActive.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <ChevronRight className="w-3.5 h-3.5 text-brown/40" />
+                      <h3 className="text-xs font-semibold text-brown/50 uppercase tracking-wider">Alt Kategoriler</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => updateParams({ kategori: activeParentSlug || '', 'alt-kategori': '' })}
+                        className={`min-h-10 px-3.5 py-1.5 rounded-full text-sm transition-all ${
+                          !activeSubcategory ? 'bg-gold/20 text-gold border border-gold/40' : 'bg-cream border border-stone/40 text-brown hover:border-gold/60'
+                        }`}
+                      >
+                        Tümü
+                      </button>
+                      {subcategoriesOfActive.map((sub) => (
+                        <button
+                          key={sub.id}
+                          onClick={() => updateParams({ kategori: activeParentSlug || '', 'alt-kategori': sub.slug })}
+                          className={`min-h-10 px-3.5 py-1.5 rounded-full text-sm transition-all ${
+                            activeSubcategory === sub.slug ? 'bg-gold/20 text-gold border border-gold/40' : 'bg-cream border border-stone/40 text-brown hover:border-gold/60'
+                          }`}
+                        >
+                          {sub.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Active Filters */}
-        {(activeCategory || searchQuery) && (
+        {(activeCategory || activeSubcategory || searchQuery) && (
           <div className="flex flex-wrap gap-2 mb-6">
-            {activeCategory && (
+            {activeCategory && !activeSubcategory && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gold/10 text-gold rounded-full text-sm">
-                {categories.find(c => c.slug === activeCategory)?.name}
-                <button onClick={() => updateParams('kategori', '')}>
+                {categories.find((c) => c.slug === activeCategory)?.name}
+                <button onClick={() => updateParams({ kategori: '', 'alt-kategori': '' })}>
                   <X className="w-3.5 h-3.5" />
                 </button>
               </span>
             )}
+            {activeSubcategory && (
+              <>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone/20 text-brown rounded-full text-sm">
+                  {categories.find((c) => c.slug === activeParentSlug)?.name}
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gold/10 text-gold rounded-full text-sm">
+                  {categories.find((c) => c.slug === activeSubcategory)?.name}
+                  <button onClick={() => updateParams({ 'alt-kategori': '' })}>
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              </>
+            )}
             {searchQuery && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gold/10 text-gold rounded-full text-sm">
                 &quot;{searchQuery}&quot;
-                <button onClick={() => { setSearch(''); updateParams('arama', ''); }}>
+                <button onClick={() => { setSearch(''); updateParams({ arama: '' }); }}>
                   <X className="w-3.5 h-3.5" />
                 </button>
               </span>

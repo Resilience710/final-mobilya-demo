@@ -50,6 +50,7 @@ type ProductForm = {
   slug: string;
   description: string;
   short_description: string;
+  parent_category_id: string;
   category_id: string;
   base_price: number;
   discount_price: number | null;
@@ -109,6 +110,7 @@ function createEmptyProduct(): ProductForm {
     slug: '',
     description: '',
     short_description: '',
+    parent_category_id: '',
     category_id: '',
     base_price: 0,
     discount_price: null,
@@ -256,6 +258,20 @@ export default function AdminProductsPage() {
   const supabase = createClient();
   const categoryOptions = useMemo(() => buildCategorySelectOptions(categories), [categories]);
 
+  const rootCategoryOptions = useMemo(
+    () => categories
+      .filter((c) => !c.parent_id)
+      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'tr')),
+    [categories],
+  );
+
+  const subcategoryOptions = useMemo(
+    () => categories
+      .filter((c) => c.parent_id === form.parent_category_id)
+      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'tr')),
+    [categories, form.parent_category_id],
+  );
+
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
@@ -279,12 +295,18 @@ export default function AdminProductsPage() {
     setEditingProduct(product);
     setError(null);
     const { visible, optionConfig } = splitSpecifications(product.specifications || {});
+    const productCategory = categories.find((c) => c.id === (product.category_id || ''));
+    const parentCatId = productCategory?.parent_id
+      ? productCategory.parent_id
+      : (productCategory?.id || '');
+    const subCatId = productCategory?.parent_id ? (productCategory.id || '') : '';
     setForm({
       name: product.name,
       slug: product.slug,
       description: product.description || '',
       short_description: product.short_description || '',
-      category_id: product.category_id || '',
+      parent_category_id: parentCatId,
+      category_id: subCatId,
       base_price: product.base_price,
       discount_price: product.discount_price,
       is_active: product.is_active,
@@ -487,7 +509,7 @@ export default function AdminProductsPage() {
       slug: form.slug || generateSlug(form.name),
       description: form.description,
       short_description: form.short_description,
-      category_id: form.category_id || null,
+      category_id: form.category_id || form.parent_category_id || null,
       base_price: form.base_price,
       discount_price: form.discount_price || null,
       is_active: form.is_active,
@@ -792,21 +814,33 @@ export default function AdminProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-charcoal">Kategori</label>
+                    <label className="mb-1 block text-sm font-medium text-charcoal">Ana Kategori</label>
                     <select
-                      value={form.category_id}
-                      onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                      value={form.parent_category_id}
+                      onChange={(e) => setForm({ ...form, parent_category_id: e.target.value, category_id: '' })}
                       className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
                     >
                       <option value="">Seçiniz</option>
-                      {categoryOptions.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.label}
-                        </option>
+                      {rootCategoryOptions.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
                     </select>
-                    <p className="mt-1 text-xs text-brown/45">Ana kategori veya alt kategori seçebilirsiniz.</p>
                   </div>
+                  {subcategoryOptions.length > 0 && (
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-charcoal">Alt Kategori</label>
+                      <select
+                        value={form.category_id}
+                        onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                        className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                      >
+                        <option value="">— Seçiniz (isteğe bağlı)</option>
+                        {subcategoryOptions.map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <label className="mb-1 block text-sm font-medium text-charcoal">SKU</label>
                     <input
