@@ -32,6 +32,7 @@ type ProductOptionConfig = {
 };
 
 const OPTION_CONFIG_SPEC_KEY = '__option_config';
+const TECHNICAL_DETAILS_SPEC_KEY = '__details_content';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
@@ -101,12 +102,76 @@ function parseOptionConfig(specifications: Product['specifications'] | null | un
   }
 }
 
+function getTechnicalDetailsContent(specifications: Product['specifications'] | null | undefined) {
+  const source = specifications || {};
+  const richContent =
+    typeof source[TECHNICAL_DETAILS_SPEC_KEY] === 'string'
+      ? source[TECHNICAL_DETAILS_SPEC_KEY].trim()
+      : '';
+
+  if (richContent) {
+    return richContent;
+  }
+
+  return Object.entries(source)
+    .filter(([key]) => !key.startsWith('__'))
+    .map(([key, value]) => (value ? `**${key}**\n${value}` : `**${key}**`))
+    .join('\n\n')
+    .trim();
+}
+
+function renderInlineFormatting(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+
+  return parts.filter(Boolean).map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return (
+        <strong key={`${part}-${index}`} className="font-semibold text-charcoal">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
+}
+
+function FormattedText({ content, className = '' }: { content: string; className?: string }) {
+  const blocks = content
+    .split(/\n\s*\n/g)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  return (
+    <div className={className}>
+      {blocks.map((block, blockIndex) => {
+        const lines = block.split('\n');
+
+        return (
+          <p key={`${blockIndex}-${block}`} className="leading-relaxed">
+            {lines.map((line, lineIndex) => (
+              <span key={`${lineIndex}-${line}`}>
+                {renderInlineFormatting(line)}
+                {lineIndex < lines.length - 1 ? <br /> : null}
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ProductDetailClient({ product, relatedProducts }: Props) {
   const activeVariants = useMemo(
     () => (product.variants || []).filter((variant) => variant.is_active),
     [product.variants],
   );
   const optionConfig = useMemo(() => parseOptionConfig(product.specifications), [product.specifications]);
+  const technicalDetails = useMemo(
+    () => getTechnicalDetailsContent(product.specifications),
+    [product.specifications],
+  );
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(activeVariants[0] || null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -283,14 +348,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     setShippingError('');
   };
 
-  const specs = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.entries(product.specifications || {}).filter(([key]) => !key.startsWith('__')),
-      ),
-    [product.specifications],
-  );
-
   return (
     <div className="min-h-screen bg-cream pt-24 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -408,7 +465,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               </div>
             ) : null}
 
-            <p className="text-brown/70 leading-relaxed mb-8">{product.description}</p>
+            {product.description ? (
+              <FormattedText
+                content={product.description}
+                className="mb-8 space-y-4 text-brown/70"
+              />
+            ) : null}
 
             {/* Variants */}
             {activeVariants.length > 0 && (
@@ -627,16 +689,14 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
             </div>
 
             {/* Specifications */}
-            {Object.keys(specs).length > 0 && (
+            {technicalDetails && (
               <div className="mt-10">
                 <h3 className="font-serif text-xl text-charcoal mb-4">Teknik Özellikler</h3>
-                <div className="bg-white rounded-2xl border border-stone/20 divide-y divide-stone/10">
-                  {Object.entries(specs).map(([key, value]) => (
-                    <div key={key} className="flex justify-between px-5 py-3.5">
-                      <span className="text-sm text-brown/60">{key}</span>
-                      <span className="text-sm text-charcoal font-medium">{value}</span>
-                    </div>
-                  ))}
+                <div className="rounded-2xl border border-stone/20 bg-white px-5 py-4">
+                  <FormattedText
+                    content={technicalDetails}
+                    className="space-y-4 text-sm text-brown/70"
+                  />
                 </div>
               </div>
             )}

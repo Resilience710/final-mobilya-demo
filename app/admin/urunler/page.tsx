@@ -50,6 +50,7 @@ type ProductForm = {
   slug: string;
   description: string;
   short_description: string;
+  technical_details: string;
   parent_category_id: string;
   category_id: string;
   base_price: number;
@@ -65,6 +66,7 @@ type ProductForm = {
 };
 
 const OPTION_CONFIG_SPEC_KEY = '__option_config';
+const TECHNICAL_DETAILS_SPEC_KEY = '__details_content';
 
 type CategorySelectOption = {
   id: string;
@@ -110,6 +112,7 @@ function createEmptyProduct(): ProductForm {
     slug: '',
     description: '',
     short_description: '',
+    technical_details: '',
     parent_category_id: '',
     category_id: '',
     base_price: 0,
@@ -140,6 +143,12 @@ function splitSpecifications(specifications: Record<string, string> | null | und
   const visible = Object.fromEntries(
     Object.entries(source).filter(([key]) => !key.startsWith('__')),
   );
+  const technicalDetails =
+    typeof source[TECHNICAL_DETAILS_SPEC_KEY] === 'string'
+      ? source[TECHNICAL_DETAILS_SPEC_KEY]
+      : Object.entries(visible)
+          .map(([key, value]) => (value ? `**${key}**\n${value}` : `**${key}**`))
+          .join('\n\n');
 
   let optionConfig = createEmptyOptionConfig();
   const rawConfig = source[OPTION_CONFIG_SPEC_KEY];
@@ -181,7 +190,7 @@ function splitSpecifications(specifications: Record<string, string> | null | und
     }
   }
 
-  return { visible, optionConfig };
+  return { visible, optionConfig, technicalDetails };
 }
 
 function inferOptionConfigFromVariants(variants: ProductVariant[] | undefined): OptionConfigForm {
@@ -223,8 +232,6 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState<ProductForm>(createEmptyProduct());
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [specKey, setSpecKey] = useState('');
-  const [specValue, setSpecValue] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
@@ -265,7 +272,7 @@ export default function AdminProductsPage() {
   const openEdit = (product: Product) => {
     setEditingProduct(product);
     setError(null);
-    const { visible, optionConfig } = splitSpecifications(product.specifications || {});
+    const { visible, optionConfig, technicalDetails } = splitSpecifications(product.specifications || {});
     const productCategory = categories.find((c) => c.id === (product.category_id || ''));
     const parentCatId = productCategory?.parent_id
       ? productCategory.parent_id
@@ -276,6 +283,7 @@ export default function AdminProductsPage() {
       slug: product.slug,
       description: product.description || '',
       short_description: product.short_description || '',
+      technical_details: technicalDetails,
       parent_category_id: parentCatId,
       category_id: subCatId,
       base_price: product.base_price,
@@ -371,20 +379,6 @@ export default function AdminProductsPage() {
     setForm({ ...form, images: form.images.filter((_, i) => i !== index) });
   };
 
-  const addSpec = () => {
-    if (specKey && specValue) {
-      setForm({ ...form, specifications: { ...form.specifications, [specKey]: specValue } });
-      setSpecKey('');
-      setSpecValue('');
-    }
-  };
-
-  const removeSpec = (key: string) => {
-    const specs = { ...form.specifications };
-    delete specs[key];
-    setForm({ ...form, specifications: specs });
-  };
-
   const addOptionValue = (group: OptionGroupKey) => {
     setForm((current) => ({
       ...current,
@@ -463,16 +457,20 @@ export default function AdminProductsPage() {
         .filter((item) => item.label),
     };
 
-    const specifications = { ...form.specifications };
+    const specifications: Record<string, string> = {};
     const hasOptionConfig =
       cleanOptionConfig.types.length > 0 ||
       cleanOptionConfig.sizes.length > 0 ||
       cleanOptionConfig.colors.length > 0;
 
+    const cleanTechnicalDetails = form.technical_details.trim();
+
     if (hasOptionConfig) {
       specifications[OPTION_CONFIG_SPEC_KEY] = JSON.stringify(cleanOptionConfig);
-    } else {
-      delete specifications[OPTION_CONFIG_SPEC_KEY];
+    }
+
+    if (cleanTechnicalDetails) {
+      specifications[TECHNICAL_DETAILS_SPEC_KEY] = cleanTechnicalDetails;
     }
 
     const productData = {
@@ -839,10 +837,13 @@ export default function AdminProductsPage() {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-charcoal">Detaylı Açıklama</label>
+                  <p className="mb-2 text-xs text-brown/45">
+                    `**kalın**` yazarak kalın metin oluşturabilir, boş satır bırakarak yeni paragraf başlatabilirsiniz.
+                  </p>
                   <textarea
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    rows={4}
+                    rows={6}
                     className="w-full resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
                   />
                 </div>
@@ -1044,31 +1045,16 @@ export default function AdminProductsPage() {
 
                 <div>
                   <label className="mb-2 block text-sm font-medium text-charcoal">Teknik Özellikler</label>
-                  {Object.entries(form.specifications).map(([key, value]) => (
-                    <div key={key} className="mb-2 flex items-center gap-2">
-                      <span className="flex-1 text-sm text-brown/60">{key}: {value}</span>
-                      <button type="button" onClick={() => removeSpec(key)} className="text-red-400 hover:text-red-600"><X className="h-3.5 w-3.5" /></button>
-                    </div>
-                  ))}
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={specKey}
-                      onChange={(e) => setSpecKey(e.target.value)}
-                      placeholder="Özellik adı"
-                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-                    />
-                    <input
-                      type="text"
-                      value={specValue}
-                      onChange={(e) => setSpecValue(e.target.value)}
-                      placeholder="Değer"
-                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-                    />
-                    <button type="button" onClick={addSpec} className="rounded-lg bg-gray-100 px-3 py-2 text-sm transition-colors hover:bg-gray-200">
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <p className="mb-2 text-xs text-brown/45">
+                    Bu alan artık tek kolonlu gösterilir. `**kalın**` yazabilir, alt satıra geçebilir ve boş satır bırakabilirsiniz.
+                  </p>
+                  <textarea
+                    value={form.technical_details}
+                    onChange={(e) => setForm({ ...form, technical_details: e.target.value })}
+                    rows={8}
+                    placeholder={'**Takım İçeriği**\n3+3+1 koltuk takımı\n\n**Kumaş**\nSilinebilir dokulu yüzey'}
+                    className="w-full resize-y rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                  />
                 </div>
 
                 <div>
