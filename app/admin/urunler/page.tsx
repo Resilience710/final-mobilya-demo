@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, X, Loader2, Upload, Save } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Product, Category, ProductVariant } from '@/lib/types';
+import RichTextEditor from '@/components/admin/RichTextEditor';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
@@ -836,15 +837,12 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-charcoal">Detaylı Açıklama</label>
-                  <p className="mb-2 text-xs text-brown/45">
-                    `**kalın**` yazarak kalın metin oluşturabilir, boş satır bırakarak yeni paragraf başlatabilirsiniz.
-                  </p>
-                  <textarea
+                  <RichTextEditor
+                    label="Detaylı Açıklama"
                     value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    onChange={(value) => setForm({ ...form, description: value })}
                     rows={6}
-                    className="w-full resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                    hint="Metni seçip üstteki araç çubuğundan kalın, italik, altı çizili veya liste uygulayabilirsiniz."
                   />
                 </div>
 
@@ -1044,16 +1042,13 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-charcoal">Teknik Özellikler</label>
-                  <p className="mb-2 text-xs text-brown/45">
-                    Bu alan artık tek kolonlu gösterilir. `**kalın**` yazabilir, alt satıra geçebilir ve boş satır bırakabilirsiniz.
-                  </p>
-                  <textarea
+                  <RichTextEditor
+                    label="Teknik Özellikler"
                     value={form.technical_details}
-                    onChange={(e) => setForm({ ...form, technical_details: e.target.value })}
+                    onChange={(value) => setForm({ ...form, technical_details: value })}
                     rows={8}
                     placeholder={'**Takım İçeriği**\n3+3+1 koltuk takımı\n\n**Kumaş**\nSilinebilir dokulu yüzey'}
-                    className="w-full resize-y rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                    hint="Bu alan tek kolonlu gösterilir. Seçili metne toolbar’dan biçim uygulayabilirsiniz."
                   />
                 </div>
 

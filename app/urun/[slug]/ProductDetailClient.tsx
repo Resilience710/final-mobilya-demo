@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -121,19 +121,69 @@ function getTechnicalDetailsContent(specifications: Product['specifications'] | 
 }
 
 function renderInlineFormatting(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const tokens = text.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|\+\+[^+]+\+\+)/g).filter(Boolean);
 
-  return parts.filter(Boolean).map((part, index) => {
-    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+  return tokens.map((token, index) => {
+    if (token.startsWith('***') && token.endsWith('***') && token.length > 6) {
       return (
-        <strong key={`${part}-${index}`} className="font-semibold text-charcoal">
-          {part.slice(2, -2)}
+        <strong key={`${token}-${index}`} className="font-semibold italic text-charcoal">
+          {token.slice(3, -3)}
         </strong>
       );
     }
 
-    return <span key={`${part}-${index}`}>{part}</span>;
+    if (token.startsWith('**') && token.endsWith('**') && token.length > 4) {
+      return (
+        <strong key={`${token}-${index}`} className="font-semibold text-charcoal">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    }
+
+    if (token.startsWith('*') && token.endsWith('*') && token.length > 2) {
+      return (
+        <em key={`${token}-${index}`} className="italic">
+          {token.slice(1, -1)}
+        </em>
+      );
+    }
+
+    if (token.startsWith('++') && token.endsWith('++') && token.length > 4) {
+      return (
+        <u key={`${token}-${index}`} className="underline underline-offset-2">
+          {token.slice(2, -2)}
+        </u>
+      );
+    }
+
+    return <Fragment key={`${token}-${index}`}>{token}</Fragment>;
   });
+}
+
+function renderParagraphLines(lines: string[]) {
+  return lines.map((line, lineIndex) => (
+    <span key={`${lineIndex}-${line}`}>
+      {renderInlineFormatting(line)}
+      {lineIndex < lines.length - 1 ? <br /> : null}
+    </span>
+  ));
+}
+
+function renderListItems(lines: string[], ordered: boolean) {
+  const ListTag = ordered ? 'ol' : 'ul';
+  const pattern = ordered ? /^\d+\.\s+/ : /^-\s+/;
+
+  return (
+    <ListTag className={ordered ? 'list-decimal space-y-2 pl-5' : 'list-disc space-y-2 pl-5'}>
+      {lines
+        .filter((line) => line.trim())
+        .map((line, index) => (
+          <li key={`${index}-${line}`} className="pl-1 leading-relaxed">
+            {renderInlineFormatting(line.replace(pattern, ''))}
+          </li>
+        ))}
+    </ListTag>
+  );
 }
 
 function FormattedText({ content, className = '' }: { content: string; className?: string }) {
@@ -146,16 +196,27 @@ function FormattedText({ content, className = '' }: { content: string; className
     <div className={className}>
       {blocks.map((block, blockIndex) => {
         const lines = block.split('\n');
+        const meaningfulLines = lines.filter((line) => line.trim());
+        const isUnorderedList = meaningfulLines.length > 0 && meaningfulLines.every((line) => /^-\s+/.test(line));
+        const isOrderedList = meaningfulLines.length > 0 && meaningfulLines.every((line) => /^\d+\.\s+/.test(line));
+        let contentNode: ReactNode;
+
+        if (isUnorderedList) {
+          contentNode = renderListItems(lines, false);
+        } else if (isOrderedList) {
+          contentNode = renderListItems(lines, true);
+        } else {
+          contentNode = (
+            <p className="leading-relaxed">
+              {renderParagraphLines(lines)}
+            </p>
+          );
+        }
 
         return (
-          <p key={`${blockIndex}-${block}`} className="leading-relaxed">
-            {lines.map((line, lineIndex) => (
-              <span key={`${lineIndex}-${line}`}>
-                {renderInlineFormatting(line)}
-                {lineIndex < lines.length - 1 ? <br /> : null}
-              </span>
-            ))}
-          </p>
+          <div key={`${blockIndex}-${block}`}>
+            {contentNode}
+          </div>
         );
       })}
     </div>
