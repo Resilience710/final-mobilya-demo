@@ -21,6 +21,7 @@ import {
 } from '@/lib/site';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { loadHomepageContent } from '@/lib/homepage';
+import type { Category } from '@/lib/types';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -98,12 +99,21 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   let announcement: string | undefined;
   const { content } = await loadHomepageContent();
+  let categories: Category[] = [];
   try {
     const supabase = createServerSupabaseClient();
-    const { data } = await supabase.from('app_settings').select('value').eq('key', 'announcement').single();
+    const [{ data }, { data: categoryRows }] = await Promise.all([
+      supabase.from('app_settings').select('value').eq('key', 'announcement').single(),
+      supabase
+        .from('categories')
+        .select('id, name, slug, description, image_url, parent_id, sort_order, created_at')
+        .order('sort_order')
+        .order('name'),
+    ]);
     if (data?.value && typeof (data.value as any).text === 'string') {
       announcement = (data.value as any).text;
     }
+    categories = (categoryRows as Category[]) || [];
   } catch {
     // DB not set up yet — use Header's built-in default
   }
@@ -126,7 +136,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               __html: JSON.stringify(buildWebsiteSchema()),
             }}
           />
-          <Header announcement={announcement} />
+          <Header announcement={announcement} categories={categories} />
           <CartDrawer />
           <SupportWidget />
           <SitePopup popup={content.popup} />

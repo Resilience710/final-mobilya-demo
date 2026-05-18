@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +11,7 @@ import {
 import Image from 'next/image';
 import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
+import type { Category } from '@/lib/types';
 
 interface MenuLink {
   label: string;
@@ -34,244 +35,6 @@ interface MenuItem {
   previews: MenuPreview[];
 }
 
-const megaMenuItems: MenuItem[] = [
-  {
-    label: 'Oturma Grubu',
-    href: '/kategori/oturma-grubu',
-    columns: [
-      {
-        links: [
-          { label: 'Koltuk Takımı', href: '/kategori/koltuk-takimi' },
-          { label: 'Köşe Takımı', href: '/kategori/kose-takimi' },
-          { label: 'Kanepe', href: '/kategori/kanepe' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Berjer', href: '/kategori/berjer' },
-          { label: 'TV Ünitesi', href: '/kategori/tv-unitesi' },
-          { label: 'Orta Sehpa', href: '/kategori/orta-sehpa' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Zigon Sehpa', href: '/kategori/zigon-sehpa' },
-          { label: 'Dresuar', href: '/kategori/oturma-grubu-dresuar' },
-        ],
-      },
-    ],
-    previews: [
-      {
-        title: 'Oturma odasında koltuk yerleşimini dengeleyen modern kombinler',
-        href: '/kategori/oturma-grubu',
-        image: 'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=1200&q=85',
-      },
-      {
-        title: 'Salonun merkezini güçlendiren sehpa ve TV ünitesi önerileri',
-        href: '/blog/kucuk-salonlar-icin-ferah-dekorasyon-onerileri',
-        image: 'https://images.unsplash.com/photo-1484101403633-562f891dc89a?w=1200&q=85',
-      },
-    ],
-  },
-  {
-    label: 'Yatak Odası',
-    href: '/kategori/yatak-odasi',
-    columns: [
-      {
-        links: [
-          { label: 'Yatak Odası Takımı', href: '/kategori/yatak-odasi-takimi' },
-          { label: 'Gardırop', href: '/kategori/gardirop' },
-          { label: 'Şifonyer', href: '/kategori/sifonyer' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Komodin', href: '/kategori/komodin' },
-          { label: 'Çamaşırlık', href: '/kategori/camasirlik' },
-          { label: 'Puf', href: '/kategori/yatak-odasi-puf' },
-        ],
-      },
-    ],
-    previews: [
-      {
-        title: 'Yatak odasında dinginlik sağlayan doğal ton ve doku önerileri',
-        href: '/blog/yatak-odasinda-huzurlu-bir-atmosfer-nasil-kurulur',
-        image: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=1200&q=85',
-      },
-      {
-        title: 'Gardırop ve komodin planında hareket alanını koruyan çözümler',
-        href: '/kategori/yatak-odasi',
-        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=85',
-      },
-    ],
-  },
-  {
-    label: 'Yemek Odası',
-    href: '/kategori/yemek-odasi',
-    columns: [
-      {
-        links: [
-          { label: 'Yemek Odası Takımı', href: '/kategori/yemek-odasi-takimi' },
-          { label: 'Konsol Aynası', href: '/kategori/konsol-aynasi' },
-          { label: 'Yemek Masası', href: '/kategori/yemek-masasi' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Mutfak Masa Takımları', href: '/kategori/mutfak-masa-takimlari' },
-          { label: 'Vitrin', href: '/kategori/vitrin' },
-          { label: 'Sandalye', href: '/kategori/sandalye' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Konsol', href: '/kategori/konsol' },
-          { label: 'Gümüşlük', href: '/kategori/gumusluk' },
-        ],
-      },
-    ],
-    previews: [
-      {
-        title: 'Yemek odasında masa ve konsol uyumu için ilham veren kurulumlar',
-        href: '/kategori/yemek-odasi',
-        image: 'https://images.unsplash.com/photo-1615874959474-d609969a20ed?w=1200&q=85',
-      },
-      {
-        title: 'Sıcak akşam sofraları için davetkar yemek alanı fikirleri',
-        href: '/kategori/yemek-odasi',
-        image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1200&q=85',
-      },
-    ],
-  },
-  {
-    label: 'Genç Odası',
-    href: '/kategori/genc-odasi',
-    columns: [
-      {
-        links: [
-          { label: 'Genç Odası Takımı', href: '/kategori/genc-odasi-takimi' },
-          { label: 'Karyola', href: '/kategori/karyola' },
-          { label: 'Dolap', href: '/kategori/genc-odasi-dolap' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Çalışma Masası', href: '/kategori/calisma-masasi' },
-          { label: 'Kitaplık', href: '/kategori/genc-odasi-kitaplik' },
-          { label: 'Ranza', href: '/kategori/ranza' },
-        ],
-      },
-    ],
-    previews: [
-      {
-        title: 'Genç odalarında ders ve dinlenme alanını birlikte planlayan fikirler',
-        href: '/kategori/genc-odasi',
-        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=85&hue=30',
-      },
-      {
-        title: 'Çocuk ve genç odalarında depolamayı artıran modüler çözümler',
-        href: '/kategori/genc-odasi',
-        image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1200&q=85&sat=10',
-      },
-    ],
-  },
-  {
-    label: 'Baza Başlık',
-    href: '/kategori/baza-baslik',
-    columns: [
-      {
-        links: [
-          { label: 'Baza', href: '/kategori/baza' },
-          { label: 'Başlık', href: '/kategori/baslik' },
-          { label: 'Sandıklı Baza', href: '/kategori/sandikli-baza' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Baza Başlık Seti', href: '/kategori/baza-baslik-seti' },
-          { label: 'Premium Başlıklar', href: '/kategori/premium-basliklar' },
-        ],
-      },
-    ],
-    previews: [
-      {
-        title: 'Bazalı sistemlerle depolamayı büyüten pratik yatak çözümleri',
-        href: '/kategori/baza-baslik',
-        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=85&sat=-20',
-      },
-      {
-        title: 'Başlık seçimiyle yatak odasında güçlü bir odak noktası oluşturun',
-        href: '/urunler?arama=başlık',
-        image: 'https://images.unsplash.com/photo-1505693534990-82e6846fbe7b?w=1200&q=85',
-      },
-    ],
-  },
-  {
-    label: 'Yatak',
-    href: '/kategori/yatak',
-    columns: [
-      {
-        links: [
-          { label: 'Tek Kişilik Yatak', href: '/kategori/tek-kisilik-yatak' },
-          { label: 'Çift Kişilik Yatak', href: '/kategori/cift-kisilik-yatak' },
-          { label: 'Ortopedik Yatak', href: '/kategori/ortopedik-yatak' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Bebek Yatağı', href: '/kategori/bebek-yatagi' },
-          { label: 'Yatak Pedi', href: '/kategori/yatak-pedi' },
-          { label: 'Yastık', href: '/kategori/yastik' },
-        ],
-      },
-    ],
-    previews: [
-      {
-        title: 'Doğru yatak ölçüsüyle uyku alanında konforu artırın',
-        href: '/kategori/yatak',
-        image: 'https://images.unsplash.com/photo-1549187774-b4e9b0445b41?w=1200&q=85',
-      },
-      {
-        title: 'Tek ve çift kişilik yatak seçiminde oda boyutuna göre planlama',
-        href: '/urunler?arama=yatak',
-        image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=1200&q=85',
-      },
-    ],
-  },
-  {
-    label: 'Tamamlayıcı Ürünler',
-    href: '/kategori/tamamlayici-urunler',
-    columns: [
-      {
-        links: [
-          { label: 'Ayna', href: '/kategori/ayna' },
-          { label: 'Dresuar', href: '/kategori/tamamlayici-dresuar' },
-          { label: 'Kitaplık', href: '/kategori/tamamlayici-kitaplik' },
-        ],
-      },
-      {
-        links: [
-          { label: 'Sehpa', href: '/kategori/sehpa' },
-          { label: 'Lambader', href: '/kategori/lambader' },
-          { label: 'Puf', href: '/kategori/tamamlayici-puf' },
-        ],
-      },
-    ],
-    previews: [
-      {
-        title: 'Tamamlayıcı parçalarla yaşam alanında derinlik oluşturan dokunuşlar',
-        href: '/kategori/tamamlayici-urunler',
-        image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1200&q=85',
-      },
-      {
-        title: 'Ayna, sehpa ve lambader ile boş köşeleri odak alanına dönüştürün',
-        href: '/kategori/tamamlayici-urunler',
-        image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200&q=85',
-      },
-    ],
-  },
-];
-
 const topLinks = [
   { label: 'Ana Sayfa', href: '/' },
   { label: 'Ürünler', href: '/urunler' },
@@ -282,7 +45,65 @@ const topLinks = [
 
 const DEFAULT_ANNOUNCEMENT = '5.000 ₺ üzeri siparişlerde ücretsiz kargo · Tüm Türkiye\'ye teslimat';
 
-export default function Header({ announcement }: { announcement?: string }) {
+function chunkLinks(links: MenuLink[], maxColumns = 3) {
+  if (links.length === 0) return [];
+
+  const columnCount = Math.min(maxColumns, Math.ceil(links.length / 3));
+  const chunkSize = Math.ceil(links.length / columnCount);
+  const columns: MenuColumn[] = [];
+
+  for (let index = 0; index < links.length; index += chunkSize) {
+    columns.push({ links: links.slice(index, index + chunkSize) });
+  }
+
+  return columns;
+}
+
+function buildMenuItems(categories: Category[]): MenuItem[] {
+  const sorted = [...categories].sort(
+    (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'tr'),
+  );
+  const roots = sorted.filter((category) => !category.parent_id);
+
+  return roots.map((root) => {
+    const children = sorted.filter((category) => category.parent_id === root.id);
+    const childLinks = children.map((child) => ({
+      label: child.name,
+      href: `/kategori/${child.slug}`,
+    }));
+
+    const previewCandidates =
+      children.length > 0
+        ? [root, ...children].filter((category) => category.image_url).slice(0, 2)
+        : [];
+
+    return {
+      label: root.name,
+      href: `/kategori/${root.slug}`,
+      columns: chunkLinks(childLinks),
+      previews: previewCandidates.map((category, index) => ({
+        title:
+          index === 0
+            ? `${category.name} kategorisini inceleyin`
+            : `${category.name} alt kategorisindeki ürünleri görüntüleyin`,
+        href: `/kategori/${category.slug}`,
+        image: category.image_url || '',
+      })),
+    };
+  });
+}
+
+function hasMegaContent(item: MenuItem) {
+  return item.columns.length > 0;
+}
+
+export default function Header({
+  announcement,
+  categories,
+}: {
+  announcement?: string;
+  categories: Category[];
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -294,6 +115,7 @@ export default function Header({ announcement }: { announcement?: string }) {
   const { user, isAdmin, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const megaMenuItems = useMemo(() => buildMenuItems(categories), [categories]);
 
   const clearCloseTimer = () => {
     if (closeTimer.current) {
@@ -442,7 +264,14 @@ export default function Header({ announcement }: { announcement?: string }) {
                   <Link
                     key={item.label}
                     href={item.href}
-                    onMouseEnter={() => openMegaMenu(item.label)}
+                    onMouseEnter={() => {
+                      if (hasMegaContent(item)) {
+                        openMegaMenu(item.label);
+                      } else {
+                        clearCloseTimer();
+                        setActiveMenu(null);
+                      }
+                    }}
                     className={`relative whitespace-nowrap px-1.5 pb-2 text-[15px] font-medium transition-colors ${
                       isCurrent ? 'text-charcoal' : 'text-charcoal/85 hover:text-charcoal'
                     }`}
@@ -469,7 +298,13 @@ export default function Header({ announcement }: { announcement?: string }) {
                 className="absolute left-0 right-0 top-full z-50 border-t border-stone/20 bg-white shadow-menu"
               >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                  <div className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:items-start">
+                  <div
+                    className={`grid gap-10 lg:items-start ${
+                      activeMenuItem.previews.length > 0
+                        ? 'lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]'
+                        : 'lg:grid-cols-1'
+                    }`}
+                  >
                     <div className="grid gap-8 md:grid-cols-3">
                       {activeMenuItem.columns.map((column, index) => (
                         <div
@@ -492,29 +327,31 @@ export default function Header({ announcement }: { announcement?: string }) {
                       ))}
                     </div>
 
-                    <div className="grid gap-8 sm:grid-cols-2">
-                      {activeMenuItem.previews.map((preview) => (
-                        <Link
-                          key={preview.title}
-                          href={preview.href}
-                          onClick={() => setActiveMenu(null)}
-                          className="group text-center"
-                        >
-                          <div className="mx-auto relative h-52 w-52 overflow-hidden rounded-full border-[3px] border-[#1f5aa8]">
-                            <Image
-                              src={preview.image}
-                              alt={preview.title}
-                              fill
-                              sizes="208px"
-                              className="object-cover transition-transform duration-700 group-hover:scale-105"
-                            />
-                          </div>
-                          <p className="mt-5 text-[15px] leading-6 text-charcoal group-hover:text-[#1f5aa8] transition-colors">
-                            {preview.title}
-                          </p>
-                        </Link>
-                      ))}
-                    </div>
+                    {activeMenuItem.previews.length > 0 ? (
+                      <div className="grid gap-8 sm:grid-cols-2">
+                        {activeMenuItem.previews.map((preview) => (
+                          <Link
+                            key={preview.title}
+                            href={preview.href}
+                            onClick={() => setActiveMenu(null)}
+                            className="group text-center"
+                          >
+                            <div className="mx-auto relative h-52 w-52 overflow-hidden rounded-full border-[3px] border-[#1f5aa8]">
+                              <Image
+                                src={preview.image}
+                                alt={preview.title}
+                                fill
+                                sizes="208px"
+                                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                              />
+                            </div>
+                            <p className="mt-5 text-[15px] leading-6 text-charcoal group-hover:text-[#1f5aa8] transition-colors">
+                              {preview.title}
+                            </p>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="mt-8 pt-6 border-t border-stone/20">
@@ -573,19 +410,31 @@ export default function Header({ announcement }: { announcement?: string }) {
               <div className="flex-1 px-3 py-4 space-y-1">
                 {megaMenuItems.map((item) => {
                   const isOpen = mobileMenu === item.label;
+                  const mobileLinks = item.columns.flatMap((column) => column.links);
+                  const expandable = mobileLinks.length > 0;
 
                   return (
                     <div key={item.label} className="rounded-2xl border border-stone/20 bg-white/75 overflow-hidden">
-                      <button
-                        onClick={() => setMobileMenu((current) => (current === item.label ? null : item.label))}
-                        className="w-full flex items-center justify-between px-4 py-3.5 text-charcoal font-medium text-sm"
-                      >
-                        {item.label}
-                        <ChevronDown className={`w-4 h-4 text-brown/40 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                      </button>
+                      {expandable ? (
+                        <button
+                          onClick={() => setMobileMenu((current) => (current === item.label ? null : item.label))}
+                          className="w-full flex items-center justify-between px-4 py-3.5 text-charcoal font-medium text-sm"
+                        >
+                          {item.label}
+                          <ChevronDown className={`w-4 h-4 text-brown/40 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          onClick={() => setMenuOpen(false)}
+                          className="flex w-full items-center justify-between px-4 py-3.5 text-charcoal font-medium text-sm"
+                        >
+                          {item.label}
+                        </Link>
+                      )}
 
                       <AnimatePresence>
-                        {isOpen && (
+                        {expandable && isOpen && (
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
@@ -601,7 +450,7 @@ export default function Header({ announcement }: { announcement?: string }) {
                               >
                                 Tümünü Gör
                               </Link>
-                              {item.columns.flatMap((column) => column.links).map((link) => (
+                              {mobileLinks.map((link) => (
                                 <Link
                                   key={`${item.label}-${link.label}`}
                                   href={link.href}
